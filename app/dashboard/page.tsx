@@ -71,6 +71,26 @@ interface CropState {
   startOffY: number;
 }
 
+interface SavedInteractionItem {
+  id: string;
+  date: string;
+  drugs: string[];
+  summary: string;
+  has_interactions: boolean;
+  interactions: Array<{
+    drug_pair: string;
+    severity: string;
+    mechanism: string;
+    clinical_effect: string;
+    recommendation: string;
+    co_prescription_context?: {
+      clinical_intent: string;
+      safety_precautions: string;
+      patient_advice: string;
+    };
+  }>;
+}
+
 const DYK_TOPICS = [
   'why you must complete your antibiotic course even when feeling better',
   'dangers of buying antibiotics without prescription in Nigeria',
@@ -120,7 +140,7 @@ export default function DashboardPage() {
   const router = useRouter();
 
   // Navigation & Drawer State
-  const [activeView, setActiveView] = useState<'overview' | 'verify' | 'history' | 'analytics' | 'account' | 'assistant'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'verify' | 'interactions' | 'history' | 'analytics' | 'account' | 'assistant' | 'chat-history'>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chartReady, setChartReady] = useState(false);
   const [period, setPeriod] = useState<'6m' | '3m' | '1m'>('6m');
@@ -216,6 +236,82 @@ export default function DashboardPage() {
   const formChartInst = useRef<any>(null);
   const trendChartInst = useRef<any>(null);
 
+  // Drug Interaction Checker State
+  const [interactionDrugs, setInteractionDrugs] = useState<string[]>(['', '']);
+  const [interactionLoading, setInteractionLoading] = useState(false);
+  const [doctorCertified, setDoctorCertified] = useState<{ [key: number]: boolean }>({});
+  const [savedInteractions, setSavedInteractions] = useState<SavedInteractionItem[]>([]);
+  const [interactionResult, setInteractionResult] = useState<{
+    summary: string;
+    has_interactions: boolean;
+    interactions: Array<{
+      drug_pair: string;
+      severity: string;
+      mechanism: string;
+      clinical_effect: string;
+      recommendation: string;
+      co_prescription_context?: {
+        clinical_intent: string;
+        safety_precautions: string;
+        patient_advice: string;
+      };
+    }>;
+  } | null>(null);
+
+  const handleCheckInteractions = async () => {
+    const valid = interactionDrugs.map((d) => d.trim()).filter(Boolean);
+    if (valid.length < 2) {
+      alert('Please enter at least 2 medications to check.');
+      return;
+    }
+    setInteractionLoading(true);
+    setInteractionResult(null);
+    try {
+      const res = await fetch('/api/interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ drugs: valid }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Check failed');
+      setInteractionResult(data);
+
+      // Auto-save to Local Storage
+      const newSavedItem: SavedInteractionItem = {
+        id: String(Date.now()),
+        date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+        drugs: valid,
+        summary: data.summary,
+        has_interactions: data.has_interactions,
+        interactions: data.interactions,
+      };
+
+      const updatedHistory = [newSavedItem, ...savedInteractions.filter((it) => it.drugs.join(', ') !== valid.join(', '))].slice(0, 5);
+      setSavedInteractions(updatedHistory);
+      localStorage.setItem('pv_interaction_history', JSON.stringify(updatedHistory));
+    } catch (err: any) {
+      alert(err.message || 'Error checking interactions');
+    } finally {
+      setInteractionLoading(false);
+    }
+  };
+
+  const handleLoadSavedInteraction = (item: SavedInteractionItem) => {
+    setInteractionDrugs(item.drugs);
+    setInteractionResult({
+      summary: item.summary,
+      has_interactions: item.has_interactions,
+      interactions: item.interactions,
+    });
+  };
+
+  const handleDeleteSavedInteraction = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = savedInteractions.filter((i) => i.id !== id);
+    setSavedInteractions(updated);
+    localStorage.setItem('pv_interaction_history', JSON.stringify(updated));
+  };
+
   // Initial Load & Auth Check
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -246,6 +342,14 @@ export default function DashboardPage() {
     if (storedUser.avatar) {
       setAvatar(storedUser.avatar);
     }
+
+    // Load saved interactions
+    try {
+      const storedInteractions = JSON.parse(localStorage.getItem('pv_interaction_history') || '[]');
+      if (Array.isArray(storedInteractions)) {
+        setSavedInteractions(storedInteractions);
+      }
+    } catch {}
 
     if (storedUser.id) {
       fetch('/api/history', {
@@ -1253,7 +1357,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
         .chip-caution{background:rgba(245,158,11,0.1);color:var(--ember);border:1px solid rgba(245,158,11,0.2)}
         .chip-unsafe{background:rgba(239,68,68,0.1);color:var(--blood);border:1px solid rgba(239,68,68,0.2)}
 
-        /* FORM PANEL STYLES MATCHING IMAGE 2 */
+        /* FORM PANEL STYLES */
         .dv-panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:2.5rem;position:relative;overflow:hidden}
         .dv-panel::before{content:'';position:absolute;top:-80px;right:-80px;width:200px;height:200px;background:radial-gradient(circle,var(--jade-glow),transparent 70%);pointer-events:none}
         .dv-head{display:flex;align-items:center;gap:12px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--line)}
@@ -1295,7 +1399,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
 
         .btn-jade{background:var(--jade);color:var(--void);border:none;border-radius:10px;padding:12px 24px;font-family:'Fraunces',serif;font-size:15px;font-weight:700;cursor:pointer}
 
-        .chat-panel{background:var(--card);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;height:550px}
+        .chat-panel{background:var(--card);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-height:580px}
         .chat-messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
         .msg{display:flex;gap:10px}
         .msg.user{flex-direction:row-reverse}
@@ -1445,6 +1549,15 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
               </a>
             </li>
             <li>
+              <a className={activeView === 'interactions' ? 'active' : ''} onClick={() => setActiveView('interactions')}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M10.5 6h-6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-6" />
+                  <path d="M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Drug Interactions
+              </a>
+            </li>
+            <li>
               <a className={activeView === 'history' ? 'active' : ''} onClick={() => setActiveView('history')}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                 Scan History
@@ -1471,6 +1584,30 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
                 AI Assistant
               </a>
+              <ul style={{ listStyle: 'none', paddingLeft: '1.75rem', marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <li>
+                  <a
+                    className={activeView === 'chat-history' ? 'active' : ''}
+                    onClick={() => setActiveView('chat-history')}
+                    style={{
+                      fontSize: '12px',
+                      color: activeView === 'chat-history' ? 'var(--jade, #00c97a)' : 'var(--text3, #6b7280)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    Chat History
+                  </a>
+                </li>
+              </ul>
             </li>
           </ul>
 
@@ -1508,7 +1645,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                 </button>
               </div>
 
-              {/* DID YOU KNOW WITH REFRESH (↻) */}
+              {/* DID YOU KNOW WITH REFRESH */}
               <div style={{ background: 'var(--jade-pale)', border: '1px solid rgba(0,201,122,0.2)', padding: '1.25rem 1.5rem', borderRadius: 16, marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: 14, position: 'relative' }}>
                 <div style={{ width: 40, height: 40, background: 'var(--jade)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
                   💡
@@ -1654,7 +1791,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
             </div>
           )}
 
-          {/* ═════════ VIEW 2: VERIFY DRUG (EXACT IMAGE 2 REPLICATION) ═════════ */}
+          {/* ═════════ VIEW 2: VERIFY DRUG ═════════ */}
           {activeView === 'verify' && (
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '2rem' }}>
@@ -1921,7 +2058,306 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
             </div>
           )}
 
-          {/* ═════════ VIEW 3: SCAN HISTORY ═════════ */}
+          {/* ═════════ VIEW 3: DRUG INTERACTIONS ═════════ */}
+          {activeView === 'interactions' && (
+            <div>
+              <div style={{ marginBottom: '1.75rem' }}>
+                <h1 style={{ fontFamily: 'Fraunces', fontSize: 26, fontWeight: 700 }}>Drug Interaction Checker</h1>
+                <p style={{ fontSize: 13.5, color: 'var(--text3)', marginTop: 4 }}>
+                  Evaluate potential clinical drug-drug interactions, mechanisms, and safety warnings
+                </p>
+              </div>
+
+              {/* 2-COLUMN LAYOUT: FORM & RESULTS ON LEFT, RECENT CHECKS ON RIGHT */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '1.75rem', alignItems: 'start' }}>
+                {/* LEFT COLUMN: CHECKER FORM + ACTIVE RESULT */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {/* INPUT CARD */}
+                  <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.5rem' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>
+                      Enter Active Ingredients or Brand Names
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                      {interactionDrugs.map((drug, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            placeholder={`Medication ${idx + 1} (e.g. ${idx === 0 ? 'Augmentin' : 'Cataflam'})`}
+                            value={drug}
+                            onChange={(e) => {
+                              const updated = [...interactionDrugs];
+                              updated[idx] = e.target.value;
+                              setInteractionDrugs(updated);
+                            }}
+                            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 14px', color: '#fff', outline: 'none', fontSize: 13.5 }}
+                          />
+                          {interactionDrugs.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() => setInteractionDrugs(interactionDrugs.filter((_, i) => i !== idx))}
+                              style={{ background: 'transparent', border: 'none', color: 'var(--blood)', cursor: 'pointer', fontSize: 16, padding: '0 8px' }}
+                              title="Remove drug"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => setInteractionDrugs([...interactionDrugs, ''])}
+                        style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--text2)', borderRadius: 8, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        + Add Another Drug
+                      </button>
+
+                      <button
+                        className="btn-jade"
+                        onClick={handleCheckInteractions}
+                        disabled={interactionLoading}
+                        style={{ padding: '9px 24px', fontSize: 13, fontWeight: 600, borderRadius: 8, marginLeft: 'auto' }}
+                      >
+                        {interactionLoading ? 'Analyzing Interactions...' : 'Check Interactions →'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* RESULTS AREA */}
+                  {interactionResult && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      {(() => {
+                        const hasContraindicated = interactionResult.interactions.some(
+                          (it) => it.severity.toLowerCase() === 'contraindicated'
+                        );
+                        const themeColor = !interactionResult.has_interactions
+                          ? '#00c97a' // Safe (Green)
+                          : hasContraindicated
+                          ? '#ef4444' // Strict Contraindication only (Red)
+                          : '#f59e0b'; // Clinical caution / standard co-prescription (Warm Amber)
+
+                        return (
+                          <div
+                            style={{
+                              padding: '1.25rem 1.5rem',
+                              borderRadius: 14,
+                              background: `${themeColor}0d`,
+                              border: `1px solid ${themeColor}33`,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: 1.2,
+                                color: themeColor,
+                                marginBottom: 6,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                              }}
+                            >
+                              <span>{hasContraindicated ? '⚠️' : !interactionResult.has_interactions ? '✓' : 'ℹ️'}</span>
+                              Clinical Summary & Guidance
+                            </div>
+                            <div style={{ fontSize: 13.5, color: 'var(--text1)', lineHeight: 1.6 }}>
+                              {interactionResult.summary}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {interactionResult.interactions.map((item, i) => {
+                        const isCertified = !!doctorCertified[i];
+                        const sev = item.severity.toLowerCase();
+                        const isSevere = sev === 'contraindicated' || sev === 'major';
+                        const badgeColor = isCertified
+                          ? '#38bdf8'
+                          : isSevere
+                          ? '#f59e0b'
+                          : sev === 'moderate'
+                          ? '#f59e0b'
+                          : '#00c97a';
+
+                        return (
+                          <div key={i} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: 10 }}>
+                              <div style={{ fontFamily: 'Fraunces', fontSize: 18, fontWeight: 700, color: '#fff' }}>
+                                {item.drug_pair}
+                              </div>
+                              <span style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                padding: '4px 10px',
+                                borderRadius: 20,
+                                background: `${badgeColor}18`,
+                                color: badgeColor,
+                                border: `1px solid ${badgeColor}40`,
+                              }}>
+                                {isCertified ? '✓ Prescribed Co-Therapy' : item.severity}
+                              </span>
+                            </div>
+
+                            {/* DOCTOR / PHARMACIST CERTIFIED CHECKBOX */}
+                            <div style={{ background: 'var(--surface)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--line)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12.5, color: 'var(--text2)', fontWeight: 500 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isCertified}
+                                  onChange={(e) => setDoctorCertified({ ...doctorCertified, [i]: e.target.checked })}
+                                  style={{ accentColor: 'var(--jade)', width: 16, height: 16, cursor: 'pointer' }}
+                                />
+                                Prescribed by my Doctor / Dispensed by Pharmacist together
+                              </label>
+                              {isCertified && (
+                                <span style={{ fontSize: 11, color: '#38bdf8', fontWeight: 600 }}>
+                                  Protocol Active
+                                </span>
+                              )}
+                            </div>
+
+                            {/* IF OVERRIDDEN: SHOW CO-PRESCRIPTION MANAGEMENT PROTOCOL */}
+                            {isCertified && item.co_prescription_context && (
+                              <div style={{ background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 12, padding: '1.25rem', marginBottom: '1rem' }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#38bdf8', marginBottom: 6 }}>
+                                  🩺 Co-Prescription Management Protocol
+                                </div>
+                                
+                                <div style={{ fontSize: 13, color: 'var(--text1)', lineHeight: 1.5, marginBottom: 10 }}>
+                                  <strong style={{ color: '#fff' }}>Why this combination is prescribed:</strong> {item.co_prescription_context.clinical_intent}
+                                </div>
+
+                                <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 10, background: 'var(--surface)', padding: '10px 12px', borderRadius: 8, borderLeft: '3px solid #38bdf8' }}>
+                                  <strong style={{ color: '#38bdf8' }}>Safety Precautions:</strong> {item.co_prescription_context.safety_precautions}
+                                </div>
+
+                                <div style={{ fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>
+                                  ℹ️ {item.co_prescription_context.patient_advice}
+                                </div>
+                              </div>
+                            )}
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginTop: '0.75rem' }}>
+                              <div style={{ background: 'var(--surface)', padding: '1rem', borderRadius: 10 }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 4 }}>
+                                  Mechanism
+                                </div>
+                                <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>
+                                  {item.mechanism}
+                                </div>
+                              </div>
+
+                              <div style={{ background: 'var(--surface)', padding: '1rem', borderRadius: 10 }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 4 }}>
+                                  Clinical Effect
+                                </div>
+                                <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>
+                                  {item.clinical_effect}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ marginTop: '1rem', padding: '0.85rem 1rem', borderRadius: 10, background: 'rgba(0, 201, 122, 0.05)', border: '1px solid rgba(0, 201, 122, 0.15)' }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--jade)', marginBottom: 2 }}>
+                                Pharmacist Recommendation
+                              </div>
+                              <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>
+                                {item.recommendation}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* RIGHT COLUMN: RECENT INTERACTION CHECKS */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: 'var(--text3)' }}>
+                        Recent Checks
+                      </div>
+                      {savedInteractions.length > 0 && (
+                        <span style={{ fontSize: 11, color: 'var(--jade)', fontWeight: 600 }}>
+                          {savedInteractions.length} saved
+                        </span>
+                      )}
+                    </div>
+
+                    {savedInteractions.length === 0 ? (
+                      <div style={{ fontSize: 12.5, color: 'var(--text3)', lineHeight: 1.5, textAlign: 'center', padding: '1.5rem 0.5rem' }}>
+                        Your checked drug combinations will appear here for one-click re-testing.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                        {savedInteractions.map((item) => (
+                          <div
+                            key={item.id}
+                            onClick={() => handleLoadSavedInteraction(item)}
+                            style={{
+                              background: 'var(--surface)',
+                              border: '1px solid var(--line)',
+                              borderRadius: 10,
+                              padding: '10px 12px',
+                              cursor: 'pointer',
+                              position: 'relative',
+                              transition: 'all 0.15s',
+                            }}
+                            onMouseOver={(e) => (e.currentTarget.style.borderColor = 'rgba(0,201,122,0.3)')}
+                            onMouseOut={(e) => (e.currentTarget.style.borderColor = 'var(--line)')}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)', lineHeight: 1.3 }}>
+                                {item.drugs.join(' + ')}
+                              </div>
+                              <button
+                                onClick={(e) => handleDeleteSavedInteraction(item.id, e)}
+                                title="Remove check"
+                                style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 12, padding: 0 }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                              <span style={{
+                                fontSize: 9.5,
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                padding: '2px 6px',
+                                borderRadius: 4,
+                                background: item.has_interactions ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0, 201, 122, 0.15)',
+                                color: item.has_interactions ? 'var(--ember)' : 'var(--jade)',
+                              }}>
+                                {item.has_interactions ? 'Guidance Available' : 'Safe / Minor'}
+                              </span>
+                              <span style={{ fontSize: 10.5, color: 'var(--text3)' }}>
+                                {item.date}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', padding: '1.25rem', borderRadius: 16, fontSize: 12, color: '#a07830', lineHeight: 1.6 }}>
+                    <strong style={{ display: 'block', color: 'var(--ember)', marginBottom: 4 }}>💡 Clinical Reminder</strong>
+                    Brand-name medications may contain multiple active ingredients. Always confirm dosages with your prescriber.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═════════ VIEW 4: SCAN HISTORY ═════════ */}
           {activeView === 'history' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -2024,7 +2460,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
             </div>
           )}
 
-          {/* ═════════ VIEW 4: ANALYTICS ═════════ */}
+          {/* ═════════ VIEW 5: ANALYTICS ═════════ */}
           {activeView === 'analytics' && (
             <div>
               <div style={{ marginBottom: '2rem' }}>
@@ -2139,7 +2575,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
             </div>
           )}
 
-          {/* ═════════ VIEW 5: MY PROFILE ═════════ */}
+          {/* ═════════ VIEW 6: MY PROFILE ═════════ */}
           {activeView === 'account' && (
             <div>
               <div style={{ marginBottom: '2rem' }}>
@@ -2151,8 +2587,6 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                 {/* AVATAR & INFO CARD */}
                 <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, overflow: 'hidden' }}>
                   <div style={{ padding: '2rem 1.5rem', textAlign: 'center', borderBottom: '1px solid var(--line)', background: 'linear-gradient(180deg, var(--jade-pale), transparent)' }}>
-                    
-                    {/* BORDER PENCIL BADGE */}
                     <div style={{ position: 'relative', width: 88, height: 88, margin: '0 auto 1.25rem' }}>
                       <div
                         onClick={() => setAvatarModalOpen(true)}
@@ -2240,7 +2674,6 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                       <input type="number" value={profile['pf-age']} onChange={(e) => setProfile({ ...profile, 'pf-age': e.target.value })} />
                     </div>
 
-                    {/* FREE-FORM OCCUPATION */}
                     <div className="field">
                       <label>Occupation</label>
                       <input
@@ -2268,7 +2701,6 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                       <input type="text" value={profile['pf-city']} onChange={(e) => setProfile({ ...profile, 'pf-city': e.target.value })} placeholder="e.g. Ikeja" />
                     </div>
 
-                    {/* ALLERGIES & CONDITIONS */}
                     <div className="field" style={{ gridColumn: '1/-1' }}>
                       <label>Known Drug Allergies (Optional)</label>
                       <input
@@ -2303,79 +2735,28 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
             </div>
           )}
 
-          {/* ═════════ VIEW 6: AI PHARMABOT ═════════ */}
+          {/* ═════════ VIEW 7: AI PHARMABOT ═════════ */}
           {activeView === 'assistant' && (
             <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h1 style={{ fontFamily: 'Fraunces', fontSize: 26, fontWeight: 700 }}>AI Pharma Assistant</h1>
-                <p style={{ fontSize: 13.5, color: 'var(--text3)', marginTop: 4 }}>
-                  Ask about drug interactions, contraindications, side effects, and more
-                </p>
+              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h1 style={{ fontFamily: 'Fraunces', fontSize: 26, fontWeight: 700 }}>AI Pharma Assistant</h1>
+                  <p style={{ fontSize: 13.5, color: 'var(--text3)', marginTop: 4 }}>
+                    Ask about drug interactions, contraindications, side effects, and more
+                  </p>
+                </div>
+                <button
+                  onClick={newChatSession}
+                  className="btn-jade"
+                  style={{ padding: '8px 16px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  + New Chat
+                </button>
               </div>
 
-              <div className="assistant-grid" style={{ display: 'grid', gridTemplateColumns: chatSidebarCollapsed ? '48px minmax(0,1fr) 240px' : '230px minmax(0,1fr) 240px', gap: '1rem', alignItems: 'start' }}>
-                {/* CONVERSATIONS DRAWER */}
-                <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: chatSidebarCollapsed ? '0.75rem 0.5rem' : '1rem', height: 550, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                    {!chatSidebarCollapsed && (
-                      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--text3)' }}>
-                        Conversations
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
-                      {!chatSidebarCollapsed && (
-                        <button onClick={newChatSession} style={{ background: 'var(--jade)', border: 'none', color: 'var(--void)', borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                          + New
-                        </button>
-                      )}
-                      <button onClick={() => setChatSidebarCollapsed(!chatSidebarCollapsed)} style={{ background: 'var(--surface)', border: '1px solid var(--line2)', color: 'var(--text3)', borderRadius: 6, padding: '3px 6px', fontSize: 11, cursor: 'pointer' }}>
-                        {chatSidebarCollapsed ? '▶' : '◀'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {!chatSidebarCollapsed && (
-                    <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {chatSessions.map((s) => (
-                        <div
-                          key={s.id}
-                          className={`chat-session-item ${s.id === currentSessionId ? 'active' : ''}`}
-                          onClick={() => loadSession(s.id)}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            {s.is_pinned && <span style={{ fontSize: 10 }}>📌</span>}
-                            <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 115 }}>
-                              {s.title}
-                            </div>
-                          </div>
-                          <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>
-                            {new Date(s.updated_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                          </div>
-
-                          <div className="chat-session-actions">
-                            <button className="cs-btn" onClick={(e) => togglePinSession(s.id, s.is_pinned, e)} title={s.is_pinned ? 'Unpin' : 'Pin'}>
-                              {s.is_pinned ? '📌' : '🔖'}
-                            </button>
-                            <button className="cs-btn" onClick={(e) => renameChatSession(s.id, s.title, e)} title="Rename">
-                              ✏️
-                            </button>
-                            <button className="cs-btn" onClick={(e) => deleteChatSession(s.id, e)} title="Delete" style={{ color: 'var(--blood)' }}>
-                              🗑
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      {chatSessions.length === 0 && (
-                        <div style={{ fontSize: 11.5, color: 'var(--text3)', textAlign: 'center', padding: '1rem 0' }}>
-                          No saved chats
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* MIDDLE CHAT PANEL */}
-                <div className="chat-panel">
+              <div className="assistant-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '1.25rem', alignItems: 'start' }}>
+                {/* PRIMARY CHAT PANEL */}
+                <div className="chat-panel" style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 580 }}>
                   <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 36, height: 36, background: 'var(--jade)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--void)', fontWeight: 800 }}>
                       ⚕
@@ -2389,7 +2770,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                     </div>
                   </div>
 
-                  <div className="chat-messages">
+                  <div className="chat-messages" style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
                     {chatMessages.map((msg, i) => (
                       <div key={i} className={`msg ${msg.role === 'user' ? 'user' : 'ai'}`}>
                         <div className="msg-bubble" style={{ whiteSpace: 'pre-wrap' }}>
@@ -2407,7 +2788,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                     <div ref={chatBottomRef} />
                   </div>
 
-                  <div style={{ padding: '6px 1.25rem', display: 'flex', alignItems: 'center', gap: 8, borderTop: '1px solid var(--line)', fontSize: 11.5, color: 'var(--text3)' }}>
+                  <div style={{ padding: '8px 1.25rem', display: 'flex', alignItems: 'center', gap: 8, borderTop: '1px solid var(--line)', fontSize: 11.5, color: 'var(--text3)' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                       <input type="checkbox" checked={useHistoryInChat} onChange={(e) => setUseHistoryInChat(e.target.checked)} style={{ accentColor: 'var(--jade)' }} />
                       Include my scan history in clinical advice
@@ -2431,7 +2812,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                   </div>
                 </div>
 
-                {/* RIGHT QUICK QUESTIONS */}
+                {/* RIGHT QUICK QUESTIONS & DISCLAIMER */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ background: 'var(--card)', border: '1px solid var(--line)', padding: '1.25rem', borderRadius: 16 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 10 }}>
@@ -2463,8 +2844,114 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
               </div>
             </div>
           )}
+
+          {/* ═════════ VIEW 8: CHAT HISTORY ═════════ */}
+          {activeView === 'chat-history' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                  <h1 style={{ fontFamily: 'Fraunces', fontSize: 26, fontWeight: 700 }}>Chat History</h1>
+                  <p style={{ fontSize: 13.5, color: 'var(--text3)', marginTop: 4 }}>
+                    Review, resume, or manage your previous AI PharmaBot conversations
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    newChatSession();
+                    setActiveView('assistant');
+                  }}
+                  className="btn-jade"
+                  style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  + Start New Chat
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                {chatSessions.map((s) => (
+                  <div
+                    key={s.id}
+                    style={{
+                      background: 'var(--card)',
+                      border: s.id === currentSessionId ? '1px solid var(--jade)' : '1px solid var(--line)',
+                      borderRadius: 16,
+                      padding: '1.25rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      minHeight: 140,
+                      cursor: 'pointer',
+                      transition: 'border-color 0.2s',
+                    }}
+                    onClick={() => {
+                      loadSession(s.id);
+                      setActiveView('assistant');
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text1)' }}>
+                          {s.is_pinned && <span style={{ marginRight: 6 }}>📌</span>}
+                          {s.title}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            className="cs-btn"
+                            onClick={(e) => togglePinSession(s.id, s.is_pinned, e)}
+                            title={s.is_pinned ? 'Unpin' : 'Pin'}
+                          >
+                            {s.is_pinned ? '📌' : '🔖'}
+                          </button>
+                          <button
+                            className="cs-btn"
+                            onClick={(e) => renameChatSession(s.id, s.title, e)}
+                            title="Rename"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            className="cs-btn"
+                            onClick={(e) => deleteChatSession(s.id, e)}
+                            title="Delete"
+                            style={{ color: 'var(--blood)' }}
+                          >
+                            🗑
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', borderTop: '1px solid var(--line)', paddingTop: '0.75rem' }}>
+                      <span style={{ fontSize: 11.5, color: 'var(--text3)' }}>
+                        {new Date(s.updated_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--jade)', fontWeight: 600 }}>
+                        Open Chat →
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                {chatSessions.length === 0 && (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem 1rem', background: 'var(--card)', borderRadius: 16, border: '1px solid var(--line)' }}>
+                    <p style={{ fontSize: 14, color: 'var(--text3)', marginBottom: '1rem' }}>No saved conversations found.</p>
+                    <button
+                      onClick={() => {
+                        newChatSession();
+                        setActiveView('assistant');
+                      }}
+                      className="btn-jade"
+                      style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}
+                    >
+                      Start your first chat
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </main>
-      </div>
+      </div> 
 
       {/* MODAL: AVATAR PICKER */}
       {avatarModalOpen && (
