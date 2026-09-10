@@ -1246,8 +1246,23 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               <ul>
                 <li><a href="#" onClick={(e) => { e.preventDefault(); showPage('verify'); }}>Verify Drug</a></li>
                 <li><a href="#" onClick={(e) => { e.preventDefault(); showPage('services'); }}>Services</a></li>
-                <li><a href="#" onClick={(e) => { e.preventDefault(); showPage('services'); }}>Pricing</a></li>
-                <li><a href="#">API Docs</a></li>
+                <li>
+  <a
+    href="#"
+    onClick={(e) => {
+      e.preventDefault();
+      showPage('services');
+      setTimeout(() => {
+        const el = document.getElementById('pricing') || document.querySelector('.pricing-section');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }}
+  >
+    Pricing
+  </a>
+</li>
               </ul>
             </div>
             <div className="footer-col">
@@ -1255,7 +1270,6 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               <ul>
                 <li><a href="#" onClick={(e) => { e.preventDefault(); showPage('about'); }}>About Us</a></li>
                 <li><a href="#" onClick={(e) => { e.preventDefault(); showPage('contact'); }}>Contact</a></li>
-                <li><a href="#">Careers</a></li>
                 <li><a href="#">Press</a></li>
               </ul>
             </div>
@@ -1270,10 +1284,10 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             </div>
           </div>
           <div className="footer-bottom">
-            <div>© 2025 PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> Technologies Ltd. All rights reserved. RC 1234567 · Lagos, Nigeria.</div>
+            <div>© 2026 PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> Technologies Ltd. All rights reserved. RC 1234567 · Lagos, Nigeria.</div>
             <div style={{ display: 'flex', gap: '1.5rem' }}>
-              <a href="#">Twitter / X</a>
-              <a href="#">LinkedIn</a>
+              <a href="https://x.com/buayokunmi0">Twitter / X</a>
+              <a href="https://www.linkedin.com/in/emmanuel-bamigboye-a5b13a289/">LinkedIn</a>
               <a href="#">Instagram</a>
             </div>
           </div>

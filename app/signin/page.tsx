@@ -16,6 +16,7 @@ export default function SignInPage() {
   // Component State
   const [username, setUsername] = useState('');
   const [foundUser, setFoundUser] = useState<UserProfile | null>(null);
+  const [savedUser, setSavedUser] = useState<{ name: string; username: string } | null>(null);
   const [pins, setPins] = useState(['', '', '', '']);
   const [userError, setUserError] = useState(false);
   const [pinError, setPinError] = useState(false);
@@ -34,12 +35,16 @@ export default function SignInPage() {
   ];
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
-  // Check if user is already logged in
+  // Check if user has an existing session on this device
   useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('pv_logged_in') === 'true') {
-      router.push('/dashboard');
+    if (typeof window !== 'undefined') {
+      const storedUsername = localStorage.getItem('pv_username');
+      const storedName = localStorage.getItem('pv_user_name');
+      if (storedUsername && storedName) {
+        setSavedUser({ name: storedName, username: storedUsername });
+      }
     }
-  }, [router]);
+  }, []);
 
   // Lockout countdown timer
   useEffect(() => {
@@ -270,6 +275,79 @@ export default function SignInPage() {
 
       <div className="page-wrap">
         <div className="auth-card">
+          <div style={{ padding: '0.5rem 0 1rem 0' }}>
+            <Link
+              href="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.85rem',
+                color: '#6b7280',
+                textDecoration: 'none',
+                fontWeight: 500,
+                transition: 'color 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#00c97a')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#6b7280')}
+            >
+              <span>←</span> Back to home
+            </Link>
+          </div>
+          {/* SAVED ACCOUNT QUICK ACCESS */}
+          {savedUser && !foundUser && (
+            <div style={{
+              background: 'rgba(0, 201, 122, 0.05)',
+              border: '1px solid rgba(0, 201, 122, 0.25)',
+              borderRadius: '20px',
+              padding: '1.75rem 1.25rem',
+              width: '100%',
+              maxWidth: '280px',
+              margin: '0 auto 1.75rem auto',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              boxSizing: 'border-box',
+            }}>
+              <div style={{ fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.25rem' }}>
+                Signed in previously on this device
+              </div>
+              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#fff' }}>
+                {savedUser.name}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: '#00c97a', marginBottom: '1rem' }}>
+                @{savedUser.username}
+              </div>
+              <button
+                className="btn-full btn-jade"
+                onClick={() => router.push('/dashboard')}
+                style={{ marginBottom: '0.75rem' }}
+              >
+                Continue as {savedUser.name.split(' ')[0]} →
+              </button>
+              <button
+                type="button"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#9ca3af',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+                onClick={() => {
+                  localStorage.removeItem('pv_logged_in');
+                  localStorage.removeItem('pv_user');
+                  localStorage.removeItem('pv_user_name');
+                  localStorage.removeItem('pv_username');
+                  setSavedUser(null);
+                }}
+              >
+                Not you? Switch account
+              </button>
+            </div>
+          )}
+
           {/* USER FOUND PREVIEW */}
           {foundUser && (
             <div className="user-found">

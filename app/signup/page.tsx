@@ -300,6 +300,25 @@ export default function SignUpPage() {
 
       <div className="page-wrap">
         <div className="auth-card">
+          <div style={{ padding: '0.5rem 0 1rem 0' }}>
+            <Link
+              href="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.85rem',
+                color: '#6b7280',
+                textDecoration: 'none',
+                fontWeight: 500,
+                transition: 'color 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#00c97a')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#6b7280')}
+            >
+              <span>←</span> Back to home
+            </Link>
+          </div>
           <div className="card-head">
             <div className="head-badge">Create Account</div>
             <h1>
