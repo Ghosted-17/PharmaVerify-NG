@@ -1,0 +1,22 @@
+{
+  "scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start"
+},
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
+    "@types/node": "^26.5.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "dotenv": "^17.4.2",
+    "next": "^16.3.4",
+    "puppeteer": "^25.9.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^7.0.2"
+  },
+  "allowScripts": {
+    "puppeteer@25.9.0": true
+  }
+}

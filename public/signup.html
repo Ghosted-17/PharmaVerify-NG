@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign Up — PharmaVerify NG</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=Epilogue:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--void:#040a06;--deep:#080f0a;--surface:#0c1510;--card:#101c14;--line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.12);--jade:#00c97a;--jade-dim:#00a362;--jade-pale:rgba(0,201,122,0.07);--blood:#ef4444;--blood-pale:rgba(239,68,68,0.08);--ember:#f59e0b;--text:#e8f0ea;--text2:#9ab0a0;--text3:#5a7060;--white:#ffffff}
+html{scroll-behavior:smooth}
+body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:0.4}
+.bg-glow{position:fixed;top:0;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(0,201,122,0.07),transparent 70%);pointer-events:none;z-index:0}
+nav{position:sticky;top:0;z-index:100;background:rgba(4,10,6,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--jade),var(--jade-dim));border-radius:8px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:16px;height:16px}
+.nav-right{font-size:13px;color:var(--text3)}
+.nav-right a{color:var(--jade);text-decoration:none;font-weight:600}
+.page-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:3rem 1.5rem;position:relative;z-index:1}
+.auth-card{width:100%;max-width:520px;background:var(--card);border:1px solid var(--line2);border-radius:24px;overflow:hidden;position:relative;z-index:1;animation:fadeUp 0.4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.card-head{padding:2rem 2rem 1.5rem;border-bottom:1px solid var(--line);text-align:center}
+.head-badge{display:inline-flex;align-items:center;gap:7px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.2);color:var(--jade);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:5px 14px;border-radius:20px;margin-bottom:1.25rem}
+.head-badge::before{content:'';width:6px;height:6px;background:var(--jade);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,201,122,0.4)}50%{box-shadow:0 0 0 5px transparent}}
+.card-head h1{font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:var(--white);letter-spacing:-0.5px;margin-bottom:0.4rem}
+.card-head p{font-size:13.5px;color:var(--text3)}
+.steps-bar{display:flex;align-items:center;padding:1.25rem 2rem;border-bottom:1px solid var(--line)}
+.step{display:flex;align-items:center;gap:8px;flex:1}
+.step-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;transition:all 0.3s}
+.step-num.done{background:var(--jade);color:var(--void)}
+.step-num.active{background:var(--jade);color:var(--void);box-shadow:0 0 0 4px rgba(0,201,122,0.2)}
+.step-num.pending{background:var(--surface);border:1px solid var(--line2);color:var(--text3)}
+.step-label{font-size:11.5px;font-weight:600;color:var(--text3);transition:color 0.3s}
+.step-label.active{color:var(--jade)}
+.step-label.done{color:var(--text2)}
+.step-line{flex:1;height:1px;background:var(--line2);margin:0 8px;transition:background 0.3s}
+.step-line.done{background:var(--jade)}
+.card-body{padding:1.75rem 2rem}
+.form-step{display:none;animation:fadeUp 0.3s ease}
+.form-step.active{display:block}
+.field{margin-bottom:1.1rem}
+.field label{display:block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:7px}
+.req{color:var(--jade);margin-left:2px}
+.field input,.field select{font-family:'Epilogue',sans-serif;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:12px 14px;width:100%;outline:none;transition:all 0.2s}
+.field input:focus,.field select:focus{border-color:var(--jade);box-shadow:0 0 0 3px var(--jade-pale)}
+.field input::placeholder{color:var(--text3)}
+.field input.error{border-color:var(--blood);box-shadow:0 0 0 3px var(--blood-pale)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-hint{font-size:11.5px;color:var(--text3);margin-top:6px;line-height:1.5}
+.dob-row{display:grid;grid-template-columns:2fr 2fr 3fr;gap:10px}
+.pin-wrap{display:flex;gap:10px;justify-content:center;margin:0.5rem 0}
+.pin-box{width:52px;height:60px;background:var(--surface);border:1.5px solid var(--line2);border-radius:12px;font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--white);text-align:center;outline:none;transition:all 0.2s;caret-color:var(--jade)}
+.pin-box:focus{border-color:var(--jade);box-shadow:0 0 0 3px var(--jade-pale);background:var(--deep)}
+.pin-box.filled{border-color:rgba(0,201,122,0.4)}
+.pin-strength{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--text3)}
+.pin-strength-bars{display:flex;gap:4px}
+.ps-bar{width:28px;height:4px;border-radius:4px;background:var(--line2);transition:background 0.3s}
+.age-notice{padding:10px 14px;border-radius:10px;font-size:12.5px;line-height:1.6;margin-top:10px;display:none}
+.age-notice.show{display:block}
+.age-notice.minor{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:var(--ember)}
+.age-notice.senior{background:var(--jade-pale);border:1px solid rgba(0,201,122,0.2);color:var(--jade)}
+.info-box{background:var(--jade-pale);border:1px solid rgba(0,201,122,0.15);border-radius:12px;padding:14px 16px;margin-top:10px;font-size:12.5px;color:var(--text2);line-height:1.7}
+.info-box strong{color:var(--jade);display:block;margin-bottom:4px;font-size:13px}
+.terms-box{display:flex;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:12px 14px;margin-bottom:1.25rem}
+.terms-box input[type=checkbox]{width:16px;height:16px;accent-color:var(--jade);flex-shrink:0;margin-top:2px}
+.terms-box p{font-size:12.5px;color:var(--text2);line-height:1.6}
+.terms-box a{color:var(--jade);text-decoration:none}
+.btn-full{width:100%;padding:14px;border-radius:12px;font-family:'Fraunces',serif;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s;border:none;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-jade{background:var(--jade);color:var(--void)}
+.btn-jade:hover{background:#00e68a;box-shadow:0 10px 30px rgba(0,201,122,0.3);transform:translateY(-1px)}
+.btn-jade:disabled{background:#1a3326;color:#2a5040;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:transparent;border:1px solid var(--line2);border-radius:12px;color:var(--text2);font-family:'Epilogue',sans-serif;font-size:14px;font-weight:600;cursor:pointer;padding:14px;width:100%;transition:all 0.2s}
+.btn-ghost:hover{border-color:var(--jade);color:var(--jade)}
+.btn-row{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:1.5rem}
+.btn-row.single{grid-template-columns:1fr}
+.err-msg{font-size:12px;color:var(--blood);margin-top:6px;display:none}
+.err-msg.show{display:block}
+.success-screen{display:none;text-align:center;padding:2.5rem 2rem}
+.success-screen.show{display:block}
+.success-icon{width:72px;height:72px;background:var(--jade);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:28px}
+.success-screen h2{font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--white);margin-bottom:0.75rem}
+.success-screen p{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:1.5rem}
+.user-pill{display:inline-flex;align-items:center;gap:10px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.2);border-radius:30px;padding:8px 18px 8px 10px;margin-bottom:1.5rem}
+.user-pill-avatar{width:34px;height:34px;background:var(--jade);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:14px;font-weight:800;color:var(--void)}
+.user-pill-name{font-size:14px;font-weight:600;color:var(--text)}
+.signin-row{text-align:center;margin-top:1.25rem;font-size:13px;color:var(--text3)}
+.signin-row a{color:var(--jade);text-decoration:none;font-weight:600}
+@media(max-width:520px){.auth-card{border-radius:16px}.card-body,.card-head{padding:1.5rem}.pin-box{width:44px;height:52px;font-size:20px}.dob-row,.field-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<nav>
+  <a href="home.html" class="nav-logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#040a06" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></div>
+    PharmaVerify<sup style="font-size:10px;vertical-align:super">NG</sup>
+  </a>
+  <div class="nav-right">Already have an account? <a href="signin.html">Sign in →</a></div>
+</nav>
+
+<div class="page-wrap">
+  <div class="auth-card">
+    <div class="card-head">
+      <div class="head-badge">Create Account</div>
+      <h1>Join PharmaVerify<sup style="font-size:14px;vertical-align:super">NG</sup></h1>
+      <p>Protect yourself from counterfeit drugs across Nigeria</p>
+    </div>
+
+    <div class="steps-bar">
+      <div class="step"><div class="step-num active" id="snum-1">1</div><div class="step-label active" id="slabel-1">Identity</div></div>
+      <div class="step-line" id="sline-1"></div>
+      <div class="step"><div class="step-num pending" id="snum-2">2</div><div class="step-label" id="slabel-2">Security</div></div>
+      <div class="step-line" id="sline-2"></div>
+      <div class="step"><div class="step-num pending" id="snum-3">3</div><div class="step-label" id="slabel-3">Profile</div></div>
+    </div>
+
+    <div class="card-body">
+      <!-- STEP 1 -->
+      <div class="form-step active" id="step-1">
+        <div class="field-row">
+          <div class="field">
+            <label>First Name <span class="req">*</span></label>
+            <input type="text" id="s1-firstname" placeholder="Chidi"/>
+            <div class="err-msg" id="err-firstname">Please enter your first name</div>
+          </div>
+          <div class="field">
+            <label>Last Name <span class="req">*</span></label>
+            <input type="text" id="s1-lastname" placeholder="Okafor"/>
+            <div class="err-msg" id="err-lastname">Please enter your last name</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Username <span class="req">*</span></label>
+          <input type="text" id="s1-username" placeholder="e.g. chidi_pharm" oninput="checkUsername(this)"/>
+          <div class="field-hint">Shows on your dashboard. Letters, numbers, underscore only. 3-20 chars.</div>
+          <div class="err-msg" id="err-username">Username taken or invalid</div>
+        </div>
+        <div class="field">
+          <label>Email Address <span class="req">*</span></label>
+          <input type="email" id="s1-email" placeholder="chidi@example.com"/>
+          <div class="field-hint">Used for account verification and drug safety alerts.</div>
+          <div class="err-msg" id="err-email">Please enter a valid email address</div>
+        </div>
+        <div class="btn-row single">
+          <button class="btn-full btn-jade" onclick="nextStep(1)">Continue →</button>
+        </div>
+        <div class="signin-row">Already have an account? <a href="signin.html">Sign in</a></div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="form-step" id="step-2">
+        <div class="field">
+          <label>Set Your 4-Digit PIN <span class="req">*</span></label>
+          <div class="pin-wrap">
+            <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="pin-1" oninput="pinMove(this,2,'s')" onkeydown="pinBack(event,this,null,'s')"/>
+            <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="pin-2" oninput="pinMove(this,3,'s')" onkeydown="pinBack(event,this,1,'s')"/>
+            <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="pin-3" oninput="pinMove(this,4,'s')" onkeydown="pinBack(event,this,2,'s')"/>
+            <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="pin-4" oninput="pinStrengthUpdate()" onkeydown="pinBack(event,this,3,'s')"/>
+          </div>
+          <div class="pin-strength">
+            <div class="pin-strength-bars"><div class="ps-bar" id="psb-1"></div><div class="ps-bar" id="psb-2"></div><div class="ps-bar" id="psb-3"></div><div class="ps-bar" id="psb-4"></div></div>
+            <span id="pin-label">Enter PIN</span>
+          </div>
+          <div class="err-msg" id="err-pin">Please enter a 4-digit PIN</div>
+        </div>
+        <div class="field" style="margin-top:1.5rem">
+          <label>Confirm PIN <span class="req">*</span></label>
+          <div class="pin-wrap">
+            <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="cpin-1" oninput="pinMove(this,2,'c')" onkeydown="pinBack(event,this,null,'c')"/>
+            <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="cpin-2" oninput="pinMove(this,3,'c')" onkeydown="pinBack(event,this,1,'c')"/>
+            <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="cpin-3" oninput="pinMove(this,4,'c')" onkeydown="pinBack(event,this,2,'c')"/>
+            <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="cpin-4" oninput="checkConfirm()" onkeydown="pinBack(event,this,3,'c')"/>
+          </div>
+          <div class="err-msg" id="err-cpin">PINs do not match</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-ghost" onclick="goStep(1)">← Back</button>
+          <button class="btn-full btn-jade" onclick="nextStep(2)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="form-step" id="step-3">
+        <div class="field">
+          <label>Date of Birth <span class="req">*</span></label>
+          <div class="dob-row">
+            <select id="s3-day"><option value="">Day</option></select>
+            <select id="s3-month">
+              <option value="">Month</option>
+              <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+              <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+              <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+              <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+            </select>
+            <select id="s3-year" onchange="checkAge()"><option value="">Year</option></select>
+          </div>
+          <div class="age-notice minor" id="age-notice-minor">⚠️ <strong>Under 18 detected.</strong> Results will be age-adjusted and medications flagged where needed.</div>
+          <div class="age-notice senior" id="age-notice-senior">✅ <strong>Senior profile detected.</strong> PharmaBot will flag dose-adjustment needs for users above 60.</div>
+          <div class="err-msg" id="err-dob">Please enter your date of birth</div>
+        </div>
+        <div class="field">
+          <label>Occupation <span class="req">*</span></label>
+          <select id="s3-occupation">
+            <option value="">Select your occupation</option>
+            <optgroup label="Healthcare">
+              <option value="pharmacy_student">Pharmacy Student</option>
+              <option value="pharmacist">Pharmacist</option>
+              <option value="doctor">Medical Doctor</option>
+              <option value="nurse">Nurse / Midwife</option>
+              <option value="medical_student">Medical Student</option>
+              <option value="lab_scientist">Laboratory Scientist</option>
+              <option value="community_health">Community Health Worker</option>
+            </optgroup>
+            <optgroup label="General">
+              <option value="student">Student (Non-medical)</option>
+              <option value="teacher">Teacher / Lecturer</option>
+              <option value="civil_servant">Civil Servant</option>
+              <option value="trader">Trader / Business owner</option>
+              <option value="farmer">Farmer</option>
+              <option value="engineer">Engineer / Tech</option>
+              <option value="lawyer">Lawyer</option>
+              <option value="artisan">Artisan / Skilled trade</option>
+              <option value="unemployed">Unemployed / Seeking work</option>
+              <option value="retired">Retired</option>
+              <option value="other">Other</option>
+            </optgroup>
+          </select>
+          <div class="err-msg" id="err-occupation">Please select your occupation</div>
+        </div>
+        <div class="field">
+          <label>Phone Number <span class="req">*</span></label>
+          <input type="tel" id="s3-phone" placeholder="e.g. 08012345678"/>
+          <div class="info-box">
+            <strong>📋 Why we need your phone number</strong>
+            When you report a counterfeit drug to NAFDAC, your number is used by their enforcement team to follow up. NAFDAC toll-free: <strong>0800-162-3322</strong>. Never shared for marketing.
+          </div>
+          <div class="err-msg" id="err-phone">Please enter a valid Nigerian phone number (e.g. 08012345678)</div>
+        </div>
+        <div class="field">
+          <label>State of Residence</label>
+          <select id="s3-state">
+            <option value="">Select state</option>
+            <option>Abia</option><option>Adamawa</option><option>Akwa Ibom</option><option>Anambra</option><option>Bauchi</option><option>Bayelsa</option><option>Benue</option><option>Borno</option><option>Cross River</option><option>Delta</option><option>Ebonyi</option><option>Edo</option><option>Ekiti</option><option>Enugu</option><option>FCT — Abuja</option><option>Gombe</option><option>Imo</option><option>Jigawa</option><option>Kaduna</option><option>Kano</option><option>Katsina</option><option>Kebbi</option><option>Kogi</option><option>Kwara</option><option>Lagos</option><option>Nasarawa</option><option>Niger</option><option>Ogun</option><option>Ondo</option><option>Osun</option><option>Oyo</option><option>Plateau</option><option>Rivers</option><option>Sokoto</option><option>Taraba</option><option>Yobe</option><option>Zamfara</option>
+          </select>
+        </div>
+        <div class="terms-box">
+          <input type="checkbox" id="terms-check"/>
+          <p>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. I understand my phone number may be shared with NAFDAC only when I initiate a counterfeit drug report.</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn-ghost" onclick="goStep(2)">← Back</button>
+          <button class="btn-full btn-jade" id="create-btn" onclick="createAccount()">Create Account ✓</button>
+        </div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div class="success-screen" id="success-screen">
+        <div class="success-icon">✓</div>
+        <h2>You're in!</h2>
+        <div class="user-pill">
+          <div class="user-pill-avatar" id="success-avatar">U</div>
+          <div class="user-pill-name" id="success-name">@username</div>
+        </div>
+        <p id="success-msg">Your account is ready.</p>
+        <button class="btn-full btn-jade" onclick="window.location.href='dashboard.html'" style="margin-bottom:10px">Go to my Dashboard →</button>
+        <button class="btn-ghost" onclick="window.location.href='home.html'" style="margin-top:0">Back to Home</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Populate dropdowns
+const dayEl=document.getElementById('s3-day');
+for(let i=1;i<=31;i++) dayEl.innerHTML+=`<option value="${i}">${i}</option>`;
+const yearEl=document.getElementById('s3-year');
+for(let y=new Date().getFullYear()-5;y>=1930;y--) yearEl.innerHTML+=`<option value="${y}">${y}</option>`;
+
+let currentStep=1;
+
+function goStep(n){
+  document.getElementById('step-'+currentStep).classList.remove('active');
+  currentStep=n;
+  document.getElementById('step-'+n).classList.add('active');
+  updateBar();
+}
+function updateBar(){
+  for(let i=1;i<=3;i++){
+    const num=document.getElementById('snum-'+i);
+    const lbl=document.getElementById('slabel-'+i);
+    const line=document.getElementById('sline-'+i);
+    if(i<currentStep){num.className='step-num done';num.textContent='✓';lbl.className='step-label done';if(line)line.className='step-line done';}
+    else if(i===currentStep){num.className='step-num active';num.textContent=i;lbl.className='step-label active';}
+    else{num.className='step-num pending';num.textContent=i;lbl.className='step-label';}
+  }
+}
+function nextStep(from){
+  if(from===1&&!validateStep1())return;
+  if(from===2&&!validateStep2())return;
+  goStep(from+1);
+}
+function showErr(id,show){const el=document.getElementById(id);if(el)el.classList.toggle('show',show);}
+function setError(inpId,errId,hasErr){const inp=document.getElementById(inpId);if(inp)inp.classList.toggle('error',hasErr);showErr(errId,hasErr);}
+function validateStep1(){
+  const fn=document.getElementById('s1-firstname').value.trim();
+  const ln=document.getElementById('s1-lastname').value.trim();
+  const un=document.getElementById('s1-username').value.trim();
+  const em=document.getElementById('s1-email').value.trim();
+  let ok=true;
+  setError('s1-firstname','err-firstname',!fn);if(!fn)ok=false;
+  setError('s1-lastname','err-lastname',!ln);if(!ln)ok=false;
+  const unOk=un&&/^[a-zA-Z0-9_]{3,20}$/.test(un);
+  setError('s1-username','err-username',!unOk);if(!unOk)ok=false;
+  const emOk=em&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
+  setError('s1-email','err-email',!emOk);if(!emOk)ok=false;
+  return ok;
+}
+function validateStep2(){
+  const pin=getPin('p');const cpin=getPin('c');
+  const pinOk=pin.length===4;const match=pin===cpin;
+  showErr('err-pin',!pinOk);showErr('err-cpin',pinOk&&!match);
+  return pinOk&&match;
+}
+function checkUsername(el){
+  const valid=/^[a-zA-Z0-9_]{3,20}$/.test(el.value);
+  el.classList.toggle('error',el.value.length>2&&!valid);
+  showErr('err-username',el.value.length>2&&!valid);
+}
+function getPin(t){return[1,2,3,4].map(i=>document.getElementById((t==='p'?'pin':'cpin')+'-'+i).value).join('');}
+function pinMove(el,nextIdx,t){
+  if(!el.value.match(/\d/)){el.value='';return;}
+  el.classList.add('filled');
+  if(t==='s')pinStrengthUpdate();
+  const pref=t==='s'?'pin':'cpin';
+  const next=document.getElementById(pref+'-'+nextIdx);
+  if(next)next.focus();
+}
+function pinBack(e,el,prevIdx,t){
+  if(e.key==='Backspace'&&!el.value&&prevIdx){
+    const pref=t==='s'?'pin':'cpin';
+    const prev=document.getElementById(pref+'-'+prevIdx);
+    if(prev){prev.value='';prev.classList.remove('filled');prev.focus();}
+  }
+}
+function pinStrengthUpdate(){
+  const pin=getPin('p');const n=pin.length;
+  const colors={1:'#ef4444',2:'#f59e0b',3:'#f59e0b',4:'#00c97a'};
+  const labels={0:'Enter PIN',1:'Weak',2:'Fair',3:'Good',4:'Strong ✓'};
+  [1,2,3,4].forEach((v,i)=>{document.getElementById('psb-'+v).style.background=i<n?(colors[n]||'#5a7060'):'rgba(255,255,255,0.06)';});
+  const lbl=document.getElementById('pin-label');lbl.textContent=labels[n]||'Enter PIN';lbl.style.color='';
+  if(n===4&&/^(.)\1+$/.test(pin)){lbl.textContent='⚠ Avoid repeated digits';lbl.style.color='#f59e0b';}
+}
+function checkConfirm(){
+  const p1=getPin('p'),p2=getPin('c');
+  if(p1&&p2&&p1!==p2)showErr('err-cpin',true);else showErr('err-cpin',false);
+}
+function checkAge(){
+  const day=document.getElementById('s3-day').value;
+  const month=document.getElementById('s3-month').value;
+  const year=document.getElementById('s3-year').value;
+  if(!year)return;
+  const dob=new Date(year,(month||1)-1,day||1);
+  const age=Math.floor((new Date()-dob)/(365.25*24*3600*1000));
+  document.getElementById('age-notice-minor').classList.toggle('show',age<18&&age>0);
+  document.getElementById('age-notice-senior').classList.toggle('show',age>=60);
+}
+async function createAccount(){
+  const day=document.getElementById('s3-day').value;
+  const month=document.getElementById('s3-month').value;
+  const year=document.getElementById('s3-year').value;
+  const occupation=document.getElementById('s3-occupation').value;
+  const phone=document.getElementById('s3-phone').value.trim();
+  const state=document.getElementById('s3-state').value;
+  const terms=document.getElementById('terms-check').checked;
+  let ok=true;
+  if(!day||!month||!year){showErr('err-dob',true);ok=false;}else showErr('err-dob',false);
+  if(!occupation){showErr('err-occupation',true);ok=false;}else showErr('err-occupation',false);
+  const phoneOk=phone&&/^0[789][01]\d{8}$/.test(phone.replace(/\s/g,''));
+  setError('s3-phone','err-phone',!phoneOk);if(!phoneOk)ok=false;
+  if(!terms){alert('Please agree to the Terms of Service.');ok=false;}
+  if(!ok)return;
+  const dob=new Date(year,month-1,day);
+  const age=Math.floor((new Date()-dob)/(365.25*24*3600*1000));
+  const dobStr=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const firstname=document.getElementById('s1-firstname').value.trim();
+  const lastname=document.getElementById('s1-lastname').value.trim();
+  const username=document.getElementById('s1-username').value.trim();
+  const email=document.getElementById('s1-email').value.trim();
+  const pin=getPin('p');
+  const pin_hash=btoa(pin+username.toLowerCase());
+  const btn=document.getElementById('create-btn');
+  btn.disabled=true;btn.textContent='Creating account...';
+  try{
+    const res=await fetch('/api/auth',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'signup',firstname,lastname,username,email,phone,pin_hash,dob:dobStr,age,occupation,state})});
+    const data=await res.json();
+    if(!res.ok){
+      btn.disabled=false;btn.textContent='Create Account ✓';
+      if(data.error==='Username already taken'){document.getElementById('err-username').textContent='Username already taken — choose another';showErr('err-username',true);goStep(1);}
+      else if(data.error==='Email already registered'){document.getElementById('err-email').textContent='Email already registered — sign in instead';showErr('err-email',true);goStep(1);}
+      else alert('Signup failed: '+data.error);
+      return;
+    }
+    localStorage.setItem('pv_user',JSON.stringify(data.user));
+    localStorage.setItem('pv_logged_in','true');
+    localStorage.setItem('pv_user_name',firstname+' '+lastname);
+    localStorage.setItem('pv_username',username);
+    document.getElementById('step-3').classList.remove('active');
+    document.getElementById('success-screen').classList.add('show');
+    document.getElementById('success-avatar').textContent=firstname[0].toUpperCase();
+    document.getElementById('success-name').textContent='@'+username;
+    document.getElementById('success-msg').innerHTML=`Welcome, <strong>${firstname}</strong>! Your PharmaVerify<sup style="font-size:9px">NG</sup> account is ready.`;
+    for(let i=1;i<=3;i++){document.getElementById('snum-'+i).className='step-num done';document.getElementById('snum-'+i).textContent='✓';document.getElementById('slabel-'+i).className='step-label done';}
+  }catch(err){btn.disabled=false;btn.textContent='Create Account ✓';alert('Connection error. Check your internet and try again.');}
+}
+</script>
+</body>
+</html>

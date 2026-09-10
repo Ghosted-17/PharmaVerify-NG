@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign In — PharmaVerify NG</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=Epilogue:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --void:#040a06; --deep:#080f0a; --surface:#0c1510; --card:#101c14;
+  --line:rgba(255,255,255,0.07); --line2:rgba(255,255,255,0.12);
+  --jade:#00c97a; --jade-dim:#00a362; --jade-glow:rgba(0,201,122,0.15); --jade-pale:rgba(0,201,122,0.07);
+  --blood:#ef4444; --blood-pale:rgba(239,68,68,0.08);
+  --text:#e8f0ea; --text2:#9ab0a0; --text3:#5a7060; --white:#ffffff;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:0.4}
+.bg-glow{position:fixed;top:0;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(0,201,122,0.07),transparent 70%);pointer-events:none;z-index:0}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(4,10,6,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--jade),var(--jade-dim));border-radius:8px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:16px;height:16px}
+.nav-right{font-size:13px;color:var(--text3)}
+.nav-right a{color:var(--jade);text-decoration:none;font-weight:600}
+.nav-right a:hover{text-decoration:underline}
+
+.page-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:3rem 1.5rem;position:relative;z-index:1}
+
+.auth-card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line2);border-radius:24px;overflow:hidden;position:relative;z-index:1;animation:fadeUp 0.4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* USER FOUND CARD */
+.user-found{display:none;text-align:center;padding:1.5rem 2rem;background:var(--surface);border-bottom:1px solid var(--line);animation:fadeUp 0.3s ease}
+.user-found.show{display:block}
+.uf-avatar{width:60px;height:60px;background:var(--jade);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:24px;font-weight:800;color:var(--void);margin:0 auto 0.75rem}
+.uf-name{font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--white)}
+.uf-username{font-size:13px;color:var(--text3);margin-top:2px}
+.uf-change{font-size:12px;color:var(--jade);cursor:pointer;margin-top:8px;display:inline-block}
+.uf-change:hover{text-decoration:underline}
+
+.card-head{padding:2rem 2rem 1.5rem;border-bottom:1px solid var(--line);text-align:center}
+.head-badge{display:inline-flex;align-items:center;gap:7px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.2);color:var(--jade);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:5px 14px;border-radius:20px;margin-bottom:1.25rem}
+.card-head h1{font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:var(--white);letter-spacing:-0.5px;margin-bottom:0.4rem}
+.card-head p{font-size:13.5px;color:var(--text3)}
+
+.card-body{padding:1.75rem 2rem}
+
+.field{margin-bottom:1.1rem}
+.field label{display:block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:7px}
+.field input{font-family:'Epilogue',sans-serif;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:12px 14px;width:100%;outline:none;transition:all 0.2s}
+.field input:focus{border-color:var(--jade);box-shadow:0 0 0 3px var(--jade-pale)}
+.field input::placeholder{color:var(--text3)}
+.field input.error{border-color:var(--blood);box-shadow:0 0 0 3px var(--blood-pale)}
+
+/* PIN */
+.pin-section{display:none;animation:fadeUp 0.3s ease}
+.pin-section.show{display:block}
+.pin-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.pin-wrap{display:flex;gap:10px;justify-content:center;margin-bottom:8px}
+.pin-box{width:60px;height:68px;background:var(--surface);border:1.5px solid var(--line2);border-radius:14px;font-family:'Fraunces',serif;font-size:26px;font-weight:700;color:var(--white);text-align:center;outline:none;transition:all 0.2s;caret-color:var(--jade)}
+.pin-box:focus{border-color:var(--jade);box-shadow:0 0 0 3px var(--jade-pale);background:var(--deep)}
+.pin-box.filled{border-color:rgba(0,201,122,0.4)}
+.pin-box.shake{animation:shake 0.4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+
+.attempts-warn{font-size:12px;color:#f59e0b;text-align:center;margin-top:8px;display:none}
+.attempts-warn.show{display:block}
+
+.err-msg{font-size:12px;color:var(--blood);text-align:center;margin-top:8px;display:none}
+.err-msg.show{display:block}
+
+.btn-full{width:100%;padding:14px;border-radius:12px;font-family:'Fraunces',serif;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s;border:none;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:0.2px;margin-top:1.25rem}
+.btn-jade{background:var(--jade);color:var(--void)}
+.btn-jade:hover{background:#00e68a;box-shadow:0 10px 30px rgba(0,201,122,0.3);transform:translateY(-1px)}
+.btn-jade:disabled{background:#1a3326;color:#2a5040;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost-full{background:transparent;border:1px solid var(--line2) !important;border:none;color:var(--text2);font-family:'Epilogue',sans-serif;font-size:13.5px;font-weight:600;margin-top:10px}
+.btn-ghost-full:hover{border-color:var(--jade) !important;color:var(--jade)}
+
+.divider{display:flex;align-items:center;gap:10px;margin:1.25rem 0;font-size:11.5px;color:var(--text3)}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line)}
+
+.signup-row{text-align:center;font-size:13px;color:var(--text3);margin-top:1rem}
+.signup-row a{color:var(--jade);text-decoration:none;font-weight:600}
+.signup-row a:hover{text-decoration:underline}
+
+.forgot-row{text-align:center;font-size:12px;color:var(--text3);margin-top:8px}
+.forgot-row a{color:var(--text3);text-decoration:none}
+.forgot-row a:hover{color:var(--jade)}
+
+.locked-msg{background:var(--blood-pale);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--blood);text-align:center;display:none;margin-bottom:1rem;line-height:1.6}
+.locked-msg.show{display:block}
+
+@media(max-width:440px){
+  .auth-card{border-radius:16px}
+  .card-body,.card-head{padding:1.5rem}
+  .pin-box{width:52px;height:60px;font-size:22px}
+}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<nav>
+  <a href="home.html" class="nav-logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#040a06" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+      </svg>
+    </div>
+    PharmaVerify<sup style="font-size:10px;vertical-align:super">NG</sup>
+  </a>
+  <div class="nav-right">No account? <a href="signup.html">Sign up free →</a></div>
+</nav>
+
+<div class="page-wrap">
+  <div class="auth-card">
+
+    <!-- USER FOUND PREVIEW -->
+    <div class="user-found" id="user-found">
+      <div class="uf-avatar" id="uf-avatar">U</div>
+      <div class="uf-name" id="uf-name">—</div>
+      <div class="uf-username" id="uf-username">@—</div>
+      <span class="uf-change" onclick="resetUser()">Not you? Switch account</span>
+    </div>
+
+    <div class="card-head" id="card-head">
+      <div class="head-badge">Welcome Back</div>
+      <h1>Sign In</h1>
+      <p>Your drug verification dashboard awaits</p>
+    </div>
+
+    <div class="card-body">
+      <div class="locked-msg" id="locked-msg">
+        🔒 Too many failed attempts. Please wait <strong id="lockdown-timer">30</strong> seconds before trying again.
+      </div>
+
+      <!-- USERNAME FIELD -->
+      <div id="username-section">
+        <div class="field">
+          <label>Username</label>
+          <input type="text" id="signin-username" placeholder="e.g. chidi_pharm" autocomplete="username" onkeydown="if(event.key==='Enter') lookupUser()"/>
+        </div>
+        <div class="err-msg" id="err-user">No account found with that username. <a href="signup.html" style="color:var(--jade)">Sign up?</a></div>
+        <button class="btn-full btn-jade" onclick="lookupUser()">Continue →</button>
+        <div class="divider">or</div>
+        <div class="signup-row">New to PharmaVerify NG? <a href="signup.html">Create a free account</a></div>
+      </div>
+
+      <!-- PIN SECTION -->
+      <div class="pin-section" id="pin-section">
+        <div class="pin-label">Enter your 4-digit PIN</div>
+        <div class="pin-wrap">
+          <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="sp1" oninput="pinMove(this,2)" onkeydown="pinBack(event,this,null)"/>
+          <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="sp2" oninput="pinMove(this,3)" onkeydown="pinBack(event,this,1)"/>
+          <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="sp3" oninput="pinMove(this,4)" onkeydown="pinBack(event,this,2)"/>
+          <input class="pin-box" type="password" inputmode="numeric" maxlength="1" id="sp4" oninput="checkPin()" onkeydown="pinBack(event,this,3)"/>
+        </div>
+        <div class="err-msg" id="err-pin">Incorrect PIN. Please try again.</div>
+        <div class="attempts-warn" id="attempts-warn">⚠ <span id="attempts-left">2</span> attempt(s) remaining before lockout</div>
+        <div class="forgot-row"><a href="#" onclick="forgotPin()">Forgot your PIN?</a></div>
+        <button class="btn-full btn-ghost-full" onclick="resetUser()" style="margin-top:1rem">← Change username</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+<script>
+let foundUser = null;
+let attempts = 3;
+let locked = false;
+
+async function lookupUser() {
+  const uname = document.getElementById('signin-username').value.trim().toLowerCase();
+  if (!uname) { showErr('err-user', true); return; }
+
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'lookup', username: uname })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.found) { showErr('err-user', true); return; }
+    foundUser = data.user;
+    showUserFound(data.user);
+    showPinSection();
+    showErr('err-user', false);
+  } catch(e) {
+    showErr('err-user', true);
+  }
+}
+
+function showUserFound(p) {
+  const card = document.getElementById('user-found');
+  const cardHead = document.getElementById('card-head');
+  document.getElementById('uf-avatar').textContent = p.firstname[0].toUpperCase();
+  document.getElementById('uf-name').textContent = (p.firstname + ' ' + (p.lastname||'')).trim();
+  document.getElementById('uf-username').textContent = '@' + p.username;
+  card.classList.add('show');
+  cardHead.style.display = 'none';
+}
+
+function showPinSection() {
+  document.getElementById('username-section').style.display = 'none';
+  document.getElementById('pin-section').classList.add('show');
+  setTimeout(() => document.getElementById('sp1').focus(), 100);
+}
+
+function resetUser() {
+  foundUser = null;
+  document.getElementById('user-found').classList.remove('show');
+  document.getElementById('card-head').style.display = '';
+  document.getElementById('username-section').style.display = '';
+  document.getElementById('pin-section').classList.remove('show');
+  clearPins();
+  showErr('err-pin', false);
+  document.getElementById('attempts-warn').classList.remove('show');
+  document.getElementById('signin-username').focus();
+}
+
+function pinMove(el, nextIdx) {
+  if (!el.value.match(/\d/)) { el.value = ''; return; }
+  el.classList.add('filled');
+  if (nextIdx <= 4) document.getElementById('sp' + nextIdx)?.focus();
+  if (nextIdx > 4) checkPin();
+}
+
+function pinBack(e, el, prevIdx) {
+  if (e.key === 'Backspace' && !el.value && prevIdx) {
+    const prev = document.getElementById('sp' + prevIdx);
+    if (prev) { prev.value = ''; prev.classList.remove('filled'); prev.focus(); }
+  }
+}
+
+function getPin() {
+  return [1,2,3,4].map(i => document.getElementById('sp' + i).value).join('');
+}
+
+async function checkPin() {
+  const pin = getPin();
+  if (pin.length < 4 || locked || !foundUser) return;
+
+  const pin_hash = btoa(pin + foundUser.username.toLowerCase());
+
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'signin', username: foundUser.username, pin_hash })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      // Save session
+      localStorage.setItem('pv_user', JSON.stringify(data.user));
+      localStorage.setItem('pv_logged_in', 'true');
+      localStorage.setItem('pv_user_name', data.user.firstname + ' ' + (data.user.lastname||''));
+      localStorage.setItem('pv_username', data.user.username);
+      // Flash green
+      [1,2,3,4].forEach(i => {
+        const b = document.getElementById('sp' + i);
+        b.style.borderColor = '#00c97a';
+        b.style.background = 'rgba(0,201,122,0.1)';
+      });
+      setTimeout(() => window.location.href = 'dashboard.html', 500);
+    } else {
+      attempts--;
+      clearPins();
+      [1,2,3,4].forEach(i => {
+        const b = document.getElementById('sp' + i);
+        b.classList.add('shake');
+        setTimeout(() => b.classList.remove('shake'), 400);
+      });
+      if (attempts <= 0) {
+        startLockout();
+      } else {
+        showErr('err-pin', true);
+        document.getElementById('attempts-left').textContent = attempts;
+        document.getElementById('attempts-warn').classList.add('show');
+        setTimeout(() => document.getElementById('sp1').focus(), 100);
+      }
+    }
+  } catch(e) {
+    showErr('err-pin', true);
+  }
+}
+
+function clearPins() {
+  [1,2,3,4].forEach(i => {
+    const b = document.getElementById('sp' + i);
+    if (b) { b.value=''; b.classList.remove('filled'); b.style.borderColor=''; b.style.background=''; }
+  });
+}
+
+function startLockout() {
+  locked = true; attempts = 3;
+  let secs = 30;
+  document.getElementById('locked-msg').classList.add('show');
+  document.getElementById('pin-section').style.opacity = '0.3';
+  document.getElementById('pin-section').style.pointerEvents = 'none';
+  showErr('err-pin', false);
+  document.getElementById('attempts-warn').classList.remove('show');
+  const timer = setInterval(() => {
+    secs--;
+    document.getElementById('lockdown-timer').textContent = secs;
+    if (secs <= 0) {
+      clearInterval(timer);
+      locked = false;
+      document.getElementById('locked-msg').classList.remove('show');
+      document.getElementById('pin-section').style.opacity = '';
+      document.getElementById('pin-section').style.pointerEvents = '';
+      clearPins();
+      setTimeout(() => document.getElementById('sp1').focus(), 100);
+    }
+  }, 1000);
+}
+
+function showErr(id, show) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('show', show);
+}
+
+function forgotPin() {
+  alert('PIN reset is not yet available.\n\nContact support at hello@pharmaverify.ng\n\nAlternatively, create a new account.');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('pv_logged_in') === 'true') {
+    window.location.href = 'dashboard.html';
+  }
+});
+</script>
+</body>
+</html>
