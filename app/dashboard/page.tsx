@@ -143,13 +143,21 @@ export default function DashboardPage() {
   const [activeView, setActiveView] = useState<'overview' | 'verify' | 'interactions' | 'history' | 'analytics' | 'account' | 'assistant' | 'chat-history'>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Auto-close sidebar on view change on mobile screens
+  // Auto-close sidebar on view change on mobile screens & persist active view
   const handleNavClick = (view: typeof activeView) => {
     setActiveView(view);
-    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
-      setSidebarOpen(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pv_active_view', view);
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', view);
+      window.history.replaceState({}, '', url.toString());
+
+      if (window.innerWidth <= 900) {
+        setSidebarOpen(false);
+      }
     }
   };
+
   const [chartReady, setChartReady] = useState(false);
   const [period, setPeriod] = useState<'6m' | '3m' | '1m'>('6m');
 
@@ -327,6 +335,17 @@ export default function DashboardPage() {
     if (localStorage.getItem('pv_logged_in') !== 'true') {
       router.push('/signin');
       return;
+    }
+
+    // Restore active tab from URL or localStorage
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab') as typeof activeView;
+    const savedTab = (localStorage.getItem('pv_active_view') as typeof activeView) || 'overview';
+    const initialTab = tabParam || savedTab;
+
+    const validTabs: (typeof activeView)[] = ['overview', 'verify', 'interactions', 'history', 'analytics', 'account', 'assistant', 'chat-history'];
+    if (validTabs.includes(initialTab)) {
+      setActiveView(initialTab);
     }
 
     const storedUser = JSON.parse(localStorage.getItem('pv_user') || '{}');
@@ -1493,24 +1512,21 @@ COMMUNICATION RULES:
 
         /* ═══ MOBILE FIXES & HORIZONTAL SCROLL SNAP (< 900px) ═══ */
         @media(max-width:900px){
-          .topbar {
-            padding: 0 0.75rem !important;
-            width: 100% !important;
-            max-width: 100vw !important;
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-            white-space: nowrap !important;
-            -webkit-overflow-scrolling: touch !important;
-            scrollbar-width: none !important;
-            gap: 10px !important;
-            justify-content: flex-start !important;
+          .topbar{
+            padding:0 0.75rem !important;
+            width:100% !important;
+            max-width:100vw !important;
+            overflow-x:auto !important;
+            overflow-y:hidden !important;
+            white-space:nowrap !important;
+            -webkit-overflow-scrolling:touch !important;
+            scrollbar-width:none !important;
+            gap:10px !important;
+            justify-content:flex-start !important;
           }
-          .topbar::-webkit-scrollbar {
-            display: none !important;
-          }
-          .topbar > div {
-            flex-shrink: 0 !important;
-          }
+          .topbar::-webkit-scrollbar{display:none !important}
+          .topbar > div{flex-shrink:0 !important}
+
           .nav-subtitle{display:none !important}
           
           .layout{
@@ -1687,7 +1703,7 @@ COMMUNICATION RULES:
             )}
           </div>
 
-          <div className="user-pill" onClick={() => setActiveView('account')}>
+          <div className="user-pill" onClick={() => handleNavClick('account')}>
             <div className="user-avatar">
               {avatar ? (
                 <img src={avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
