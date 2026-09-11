@@ -1277,8 +1277,32 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
           --ember:#f59e0b;--blood:#ef4444;--text:#e8f0ea;--text2:#9ab0a0;--text3:#5a7060;--white:#ffffff;
           --sidebar-w:240px;
         }
-        body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;overflow-x:hidden}
-        .topbar{background:rgba(4,10,6,0.97);border-bottom:1px solid var(--line);padding:0 1.5rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:600;width:100%}
+        html,body{
+          font-family:'Epilogue',sans-serif;
+          background:var(--void);
+          color:var(--text);
+          min-height:100vh;
+          width:100% !important;
+          max-width:100vw !important;
+          overflow-x:hidden !important;
+          margin:0;
+          padding:0;
+        }
+        .topbar{
+          background:rgba(4,10,6,0.97);
+          border-bottom:1px solid var(--line);
+          padding:0 1.5rem;
+          height:60px;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          position:sticky;
+          top:0;
+          z-index:600;
+          width:100% !important;
+          max-width:100vw !important;
+          box-sizing:border-box !important;
+        }
         .nav-logo{font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--white);display:flex;align-items:center;gap:8px;text-decoration:none}
         .logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--jade),var(--jade-dim));border-radius:8px;display:flex;align-items:center;justify-content:center}
         
@@ -1289,7 +1313,14 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
         .user-avatar{width:26px;height:26px;background:var(--jade);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--void);overflow:hidden}
 
         /* RETRACTABLE DRAWER SIDEBAR */
-        .layout{display:flex;min-height:calc(100vh - 60px);position:relative;width:100%;overflow-x:hidden}
+        .layout{
+          display:flex;
+          min-height:calc(100vh - 60px);
+          position:relative;
+          width:100% !important;
+          max-width:100vw !important;
+          overflow-x:hidden !important;
+        }
         .sidebar{
           width:var(--sidebar-w);
           background:var(--deep);
@@ -1325,14 +1356,17 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
           flex:1;
           padding:2rem 2.5rem;
           overflow-y:auto;
+          overflow-x:hidden;
           transition:margin-left 0.28s ease;
           margin-left:var(--sidebar-w);
           width:calc(100% - var(--sidebar-w));
           min-width:0;
+          box-sizing:border-box !important;
         }
         .main.full-width{
           margin-left:0 !important;
           width:100% !important;
+          max-width:100% !important;
         }
 
         .sidebar-section{padding:1.5rem 1rem 0.5rem;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
@@ -1342,13 +1376,13 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
         .sidebar-nav a:hover{background:rgba(255,255,255,0.06);color:var(--text)}
         .sidebar-nav a.active{background:var(--jade-pale);color:var(--jade);font-weight:600}
 
-        .stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:2rem}
+        .stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:2rem;width:100%}
         .stat-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;position:relative}
         .stat-num{font-family:'Fraunces',serif;font-size:32px;font-weight:700;line-height:1;color:var(--white)}
         .stat-label{font-size:12px;color:var(--text3);margin-top:5px;font-weight:500}
 
-        .chart-row{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:2rem}
-        .chart-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem}
+        .chart-row{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:2rem;width:100%}
+        .chart-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;min-width:0}
         .chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
         .chart-head h3{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--white)}
         .chart-head p{font-size:12px;color:var(--text3);margin-top:2px}
@@ -1357,10 +1391,10 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
         .period-tab{padding:4px 10px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;color:var(--text3);border:1px solid transparent}
         .period-tab.active{background:var(--jade-pale);color:var(--jade);border-color:rgba(0,201,122,0.2)}
 
-        .history-wrap{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+        .history-wrap{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;width:100%}
         .history-toolbar{padding:1.25rem 1.5rem;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
         .table-responsive{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-        table{width:100%;border-collapse:collapse;min-width:600px}
+        table{width:100%;border-collapse:collapse;min-width:550px}
         thead tr{background:var(--surface)}
         th{padding:10px 16px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);text-align:left;border-bottom:1px solid var(--line)}
         td{padding:13px 16px;font-size:13.5px;color:var(--text2);border-bottom:1px solid var(--line)}
@@ -1370,7 +1404,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
         .chip-unsafe{background:rgba(239,68,68,0.1);color:var(--blood);border:1px solid rgba(239,68,68,0.2)}
 
         /* FORM PANEL STYLES */
-        .dv-panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:2.5rem;position:relative;overflow:hidden}
+        .dv-panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:2.5rem;position:relative;overflow:hidden;width:100%}
         .dv-panel::before{content:'';position:absolute;top:-80px;right:-80px;width:200px;height:200px;background:radial-gradient(circle,var(--jade-glow),transparent 70%);pointer-events:none}
         .dv-head{display:flex;align-items:center;gap:12px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--line)}
         .dv-head-icon{width:40px;height:40px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -1395,13 +1429,13 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
         .verify-btn:hover{background:#00e68a;box-shadow:0 12px 36px rgba(0,201,122,0.35);transform:translateY(-1px)}
 
         /* SIDEBAR IN VERIFY VIEW */
-        .dv-aside{display:flex;flex-direction:column;gap:1.5rem}
+        .dv-aside{display:flex;flex-direction:column;gap:1.5rem;width:100%}
         .result-placeholder{background:var(--card);border:1px dashed var(--line2);border-radius:20px;padding:3rem 2rem;text-align:center;color:var(--text3)}
         .result-placeholder .ph-icon{width:56px;height:56px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem}
         .result-placeholder h3{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text2);margin-bottom:0.5rem}
         .result-placeholder p{font-size:13px;line-height:1.65}
 
-        .info-widget{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:1.5rem}
+        .info-widget{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:1.5rem;width:100%}
         .info-widget h3{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--white);margin-bottom:1.25rem}
         .check-list{list-style:none;display:flex;flex-direction:column;gap:10px}
         .check-list li{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text2);line-height:1.5}
@@ -1431,31 +1465,52 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
 
         .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:900;display:flex;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(4px)}
         .modal{background:var(--card);border:1px solid var(--line2);border-radius:20px;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:1.75rem}
+
         .interactions-grid-wrap {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 1.5rem !important;
-          }
-          .interaction-actions-row {
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 10px !important;
-          }
-          .interaction-actions-row button {
-            width: 100% !important;
-            text-align: center !important;
-          }
-            
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 320px;
+          gap: 1.75rem;
+          align-items: start;
+          width: 100%;
+        }
+        .interaction-actions-row {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+        }
+
         /* ═══ MOBILE FIXES & HORIZONTAL SCROLL SNAP (< 900px) ═══ */
         @media(max-width:900px){
-          .topbar{padding:0 1rem !important}
+          .topbar{
+            padding:0 1rem !important;
+            width:100% !important;
+            max-width:100vw !important;
+          }
           .nav-subtitle{display:none !important}
           
+          .layout{
+            display:block !important;
+            width:100% !important;
+            max-width:100vw !important;
+            overflow-x:hidden !important;
+          }
+
           .main{
+            display:block !important;
             padding:1.25rem 1rem !important;
             margin-left:0 !important;
             width:100% !important;
             max-width:100vw !important;
+            box-sizing:border-box !important;
+            overflow-x:hidden !important;
+          }
+
+          .main > div{
+            width:100% !important;
+            max-width:100% !important;
+            box-sizing:border-box !important;
           }
           
           .sidebar{
@@ -1484,11 +1539,12 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
             padding-left:1rem !important;
             padding-right:1rem !important;
             scrollbar-width:none !important;
+            width:calc(100% + 2rem) !important;
           }
           .stat-grid::-webkit-scrollbar{display:none}
           .stat-card{
-            flex:0 0 68% !important;
-            max-width:68% !important;
+            flex:0 0 72% !important;
+            max-width:72% !important;
             scroll-snap-align:start !important;
             min-width:200px !important;
           }
@@ -1496,6 +1552,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
           /* Convert all multi-column layouts to stack cleanly */
           .chart-row,
           .assistant-grid,
+          .interactions-grid-wrap,
           div[style*="gridTemplateColumns: '1fr 380px'"],
           div[style*="grid-template-columns: 1fr 380px"],
           div[style*="gridTemplateColumns: 'minmax(0, 1fr) 320px'"],
@@ -1509,6 +1566,16 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
             grid-template-columns:1fr !important;
             width:100% !important;
             gap:1.25rem !important;
+          }
+
+          .interaction-actions-row {
+            flex-direction:column !important;
+            align-items:stretch !important;
+            gap:10px !important;
+          }
+          .interaction-actions-row button {
+            width:100% !important;
+            text-align:center !important;
           }
 
           .dv-panel{padding:1.5rem 1.25rem !important}
@@ -1728,7 +1795,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                     Here&apos;s a summary of your verification activity
                   </p>
                 </div>
-                <button className="btn-jade" onClick={() => setActiveView('verify')} style={{ padding: '8px 18px', fontSize: 13 }}>
+                <button className="btn-jade" onClick={() => handleNavClick('verify')} style={{ padding: '8px 18px', fontSize: 13 }}>
                   + New Verification
                 </button>
               </div>
@@ -1825,7 +1892,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                 </div>
               </div>
 
-                <div className="history-wrap">
+              <div className="history-wrap">
                 <div className="history-toolbar">
                   <h3 style={{ fontFamily: 'Fraunces', fontSize: 16 }}>Recent Verifications</h3>
                   <button onClick={() => handleNavClick('history')} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--jade)', cursor: 'pointer', fontSize: 13 }}>
@@ -2368,8 +2435,8 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                 </div>
 
                 {/* RIGHT COLUMN: RECENT INTERACTION CHECKS */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
+                  <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.25rem', width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
                       <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: 'var(--text3)' }}>
                         Recent Checks
@@ -2438,7 +2505,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                     )}
                   </div>
 
-                  <div style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', padding: '1.25rem', borderRadius: 16, fontSize: 12, color: '#a07830', lineHeight: 1.6 }}>
+                  <div style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', padding: '1.25rem', borderRadius: 16, fontSize: 12, color: '#a07830', lineHeight: 1.6, width: '100%' }}>
                     <strong style={{ display: 'block', color: 'var(--ember)', marginBottom: 4 }}>💡 Clinical Reminder</strong>
                     Brand-name medications may contain multiple active ingredients. Always confirm dosages with your prescriber.
                   </div>
@@ -2880,7 +2947,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                     <div ref={chatBottomRef} />
                   </div>
 
-                  <div style={{ padding: '8px 1.25rem', display: 'flex', alignItems: 'center', gap: 8, borderTop: '1px solid var(--line)', fontSize: 11.5, color: 'var(--text3)' }}>
+                  <div style={{ padding: '8px 1.25rem', display: 'flex', alignItems: 'center', gap: 6, borderTop: '1px solid var(--line)', fontSize: 11.5, color: 'var(--text3)' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                       <input type="checkbox" checked={useHistoryInChat} onChange={(e) => setUseHistoryInChat(e.target.checked)} style={{ accentColor: 'var(--jade)' }} />
                       Include my scan history in clinical advice
@@ -2950,7 +3017,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                 <button
                   onClick={() => {
                     newChatSession();
-                    setActiveView('assistant');
+                    handleNavClick('assistant');
                   }}
                   className="btn-jade"
                   style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
@@ -2977,7 +3044,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                     }}
                     onClick={() => {
                       loadSession(s.id);
-                      setActiveView('assistant');
+                      handleNavClick('assistant');
                     }}
                   >
                     <div>
@@ -3030,7 +3097,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                     <button
                       onClick={() => {
                         newChatSession();
-                        setActiveView('assistant');
+                        handleNavClick('assistant');
                       }}
                       className="btn-jade"
                       style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}
