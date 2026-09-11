@@ -522,6 +522,65 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         .fade-in{animation:fadeUp 0.6s ease both}
 
+        /* ═══ MOBILE HORIZONTAL SCROLL SNAP SYSTEM ═══ */
+        .mobile-swipe-indicator {
+          display: none;
+        }
+
+        @media (max-width: 600px) {
+          .mobile-swipe-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--jade);
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            font-weight: 600;
+          }
+
+          /* Container that holds sideways cards */
+          .mobile-scroll-snap {
+            display: flex !important;
+            flex-direction: row !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            scroll-snap-type: x mandatory !important;
+            -webkit-overflow-scrolling: touch !important;
+            gap: 14px !important;
+            padding: 0.5rem 1.25rem 1.5rem 1.25rem !important;
+            margin-left: -1.25rem !important;
+            margin-right: -1.25rem !important;
+            scrollbar-width: none; /* Firefox */
+          }
+          .mobile-scroll-snap::-webkit-scrollbar {
+            display: none; /* Chrome, Safari */
+          }
+
+          /* Individual card snapping */
+          .mobile-snap-item {
+            flex: 0 0 80% !important; /* 80% lets the adjacent card peek through to invite swiping */
+            max-width: 80% !important;
+            scroll-snap-align: center !important;
+            scroll-snap-stop: normal !important;
+            box-sizing: border-box !important;
+          }
+
+          /* Steps horizontal connector line hide */
+          .steps-connector-line {
+            display: none !important;
+          }
+
+          .steps-mobile-card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 1.75rem 1.25rem;
+            text-align: center;
+          }
+        }
+
         /* ═══ RESPONSIVE ═══ */
         @media(max-width:900px){
           .verify-layout,.about-hero,.contact-layout{grid-template-columns:1fr}
@@ -700,34 +759,41 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         {/* PROCESS */}
         <section style={{ background: 'var(--surface)' }}>
           <div className="section-inner">
-            <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
               <div className="section-kicker">Process</div>
               <h2 className="section-title" style={{ margin: '0 auto' }}>How Verification Works</h2>
+              <div className="mobile-swipe-indicator">Swipe horizontally ↔</div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 28, left: '12.5%', right: '12.5%', height: 1, background: 'linear-gradient(90deg,var(--jade),rgba(0,201,122,0.2))', zIndex: 0 }}></div>
-              <div style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
+
+            <div className="mobile-scroll-snap" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, position: 'relative' }}>
+              <div className="steps-connector-line" style={{ position: 'absolute', top: 28, left: '12.5%', right: '12.5%', height: 1, background: 'linear-gradient(90deg,var(--jade),rgba(0,201,122,0.2))', zIndex: 0 }}></div>
+
+              <div className="mobile-snap-item steps-mobile-card" style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
                 <div style={{ width: 56, height: 56, background: 'var(--jade)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'Fraunces', fontSize: 20, fontWeight: 700, color: 'var(--void)' }}>1</div>
                 <h4 style={{ fontFamily: 'Fraunces', fontSize: 16, fontWeight: 700, color: 'var(--white)', marginBottom: '0.5rem' }}>Enter Details</h4>
                 <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Input the drug name, manufacturer, expiry, and NAFDAC registration number.</p>
               </div>
-              <div style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
+
+              <div className="mobile-snap-item steps-mobile-card" style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
                 <div style={{ width: 56, height: 56, background: 'var(--card)', border: '2px solid var(--jade-dim)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'Fraunces', fontSize: 20, fontWeight: 700, color: 'var(--jade)' }}>2</div>
                 <h4 style={{ fontFamily: 'Fraunces', fontSize: 16, fontWeight: 700, color: 'var(--white)', marginBottom: '0.5rem' }}>Describe Condition</h4>
                 <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Describe visual changes and check any warning signs you observe.</p>
               </div>
-              <div style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
+
+              <div className="mobile-snap-item steps-mobile-card" style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
                 <div style={{ width: 56, height: 56, background: 'var(--card)', border: '2px solid var(--jade-dim)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'Fraunces', fontSize: 20, fontWeight: 700, color: 'var(--jade)' }}>3</div>
                 <h4 style={{ fontFamily: 'Fraunces', fontSize: 16, fontWeight: 700, color: 'var(--white)', marginBottom: '0.5rem' }}>AI Analysis</h4>
                 <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Our AI cross-checks all factors against pharmaceutical safety standards.</p>
               </div>
-              <div style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
+
+              <div className="mobile-snap-item steps-mobile-card" style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
                 <div style={{ width: 56, height: 56, background: 'var(--card)', border: '2px solid var(--jade-dim)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'Fraunces', fontSize: 20, fontWeight: 700, color: 'var(--jade)' }}>4</div>
                 <h4 style={{ fontFamily: 'Fraunces', fontSize: 16, fontWeight: 700, color: 'var(--white)', marginBottom: '0.5rem' }}>Get Report</h4>
                 <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Receive a full safety score and actionable recommendation instantly.</p>
               </div>
             </div>
-            <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+
+            <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
               <button className="btn-primary" style={{ padding: '14px 36px', fontSize: 15, borderRadius: 10 }} onClick={() => showPage('verify')}>Try It Now — It&apos;s Free →</button>
             </div>
           </div>
@@ -964,42 +1030,45 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         <section style={{ background: 'var(--deep)' }}>
           <div className="section-inner">
             <div className="services-grid">
-              <div className="service-card">
+              <div className="mobile-swipe-indicator">Swipe services ↔</div>
+            <div className="services-grid mobile-scroll-snap">
+              <div className="service-card mobile-snap-item">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></div>
                 <h3>Drug Safety Verification</h3>
                 <p>Submit medication details and receive an instant AI-powered safety score covering NAFDAC registry alignment, expiry, storage, and packaging condition.</p>
                 <div className="service-tag">Free · Instant</div>
               </div>
-              <div className="service-card">
+              <div className="service-card mobile-snap-item">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg></div>
                 <h3>Registry Verification API</h3>
                 <p>Integrate our verification engine into your pharmacy or hospital management system via REST API to automatically cross-check medications with regulatory registries.</p>
                 <div className="service-tag">Enterprise · API</div>
               </div>
-              <div className="service-card">
+              <div className="service-card mobile-snap-item">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg></div>
                 <h3>Regulatory Compliance Reports</h3>
                 <p>Generate official pharmaceutical compliance documentation aligned with NAFDAC, WHO, and international pharmacovigilance standards.</p>
                 <div className="service-tag">Professional · PDF Reports</div>
               </div>
-              <div className="service-card">
+              <div className="service-card mobile-snap-item">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 20V10M12 20V4M6 20v-6" /></svg></div>
                 <h3>Pharmacy Inventory Insights</h3>
                 <p>Monitor dispensary safety and inventory integrity with real-time analytics, expiry tracking, and automated alerts for at-risk stock.</p>
                 <div className="service-tag">Dashboard · Analytics</div>
               </div>
-              <div className="service-card">
+              <div className="service-card mobile-snap-item">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 8v4l3 3" /></svg></div>
                 <h3>Counterfeit Risk Detection</h3>
                 <p>Advanced AI pattern recognition identifies potential counterfeit indicators by cross-referencing packaging anomalies, mislabeled strengths, and NAFDAC registry mismatches.</p>
                 <div className="service-tag">AI-Powered · Advanced</div>
               </div>
-              <div className="service-card">
+              <div className="service-card mobile-snap-item">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg></div>
                 <h3>Training &amp; Certification</h3>
                 <p>Equip your dispensary team with pharmaceutical safety training programs, including visual inspection techniques and regulatory counterfeit awareness.</p>
                 <div className="service-tag">Training · Certification</div>
               </div>
+             </div>
             </div>
           </div>
         </section>
@@ -1139,16 +1208,18 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
           <div className="section-inner">
             <div className="section-kicker">Certifications &amp; Standards</div>
             <h2 className="section-title">Compliance &amp; Accreditation</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.5rem', marginTop: '2.5rem' }}>
-              <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
+            <div className="mobile-swipe-indicator">Swipe horizontally ↔</div>
+            
+            <div className="mobile-scroll-snap" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.5rem', marginTop: '2rem' }}>
+              <div className="mobile-snap-item" style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
                 <div style={{ fontFamily: 'Fraunces', fontSize: 22, fontWeight: 700, color: 'var(--jade)', marginBottom: '0.5rem' }}>NAFDAC</div>
                 <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Aligned with guidelines and registration data from Nigeria&apos;s National Agency for Food and Drug Administration and Control.</div>
               </div>
-              <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
+              <div className="mobile-snap-item" style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
                 <div style={{ fontFamily: 'Fraunces', fontSize: 22, fontWeight: 700, color: 'var(--jade)', marginBottom: '0.5rem' }}>WHO GMP</div>
                 <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Assessment methodology aligned with WHO Good Manufacturing Practice guidelines.</div>
               </div>
-              <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
+              <div className="mobile-snap-item" style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
                 <div style={{ fontFamily: 'Fraunces', fontSize: 22, fontWeight: 700, color: 'var(--jade)', marginBottom: '0.5rem' }}>ISO 27001</div>
                 <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Information security management certified, ensuring your data is always protected.</div>
               </div>

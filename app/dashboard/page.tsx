@@ -141,7 +141,15 @@ export default function DashboardPage() {
 
   // Navigation & Drawer State
   const [activeView, setActiveView] = useState<'overview' | 'verify' | 'interactions' | 'history' | 'analytics' | 'account' | 'assistant' | 'chat-history'>('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Auto-close sidebar on view change on mobile screens
+  const handleNavClick = (view: typeof activeView) => {
+    setActiveView(view);
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+      setSidebarOpen(false);
+    }
+  };
   const [chartReady, setChartReady] = useState(false);
   const [period, setPeriod] = useState<'6m' | '3m' | '1m'>('6m');
 
@@ -1270,18 +1278,18 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
           --sidebar-w:240px;
         }
         body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;overflow-x:hidden}
-        .topbar{background:rgba(4,10,6,0.97);border-bottom:1px solid var(--line);padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:600}
-        .nav-logo{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--white);display:flex;align-items:center;gap:10px;text-decoration:none}
-        .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--jade),var(--jade-dim));border-radius:8px;display:flex;align-items:center;justify-content:center}
+        .topbar{background:rgba(4,10,6,0.97);border-bottom:1px solid var(--line);padding:0 1.5rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:600;width:100%}
+        .nav-logo{font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--white);display:flex;align-items:center;gap:8px;text-decoration:none}
+        .logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--jade),var(--jade-dim));border-radius:8px;display:flex;align-items:center;justify-content:center}
         
         .menu-toggle{width:36px;height:36px;border:1px solid var(--line2);border-radius:8px;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
         .menu-toggle:hover{border-color:var(--jade);color:var(--jade)}
 
-        .user-pill{display:flex;align-items:center;gap:9px;padding:6px 14px 6px 8px;background:var(--card);border:1px solid var(--line2);border-radius:30px;cursor:pointer}
-        .user-avatar{width:28px;height:28px;background:var(--jade);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--void);overflow:hidden}
+        .user-pill{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 6px;background:var(--card);border:1px solid var(--line2);border-radius:30px;cursor:pointer}
+        .user-avatar{width:26px;height:26px;background:var(--jade);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--void);overflow:hidden}
 
         /* RETRACTABLE DRAWER SIDEBAR */
-        .layout{display:flex;min-height:calc(100vh - 60px);position:relative}
+        .layout{display:flex;min-height:calc(100vh - 60px);position:relative;width:100%;overflow-x:hidden}
         .sidebar{
           width:var(--sidebar-w);
           background:var(--deep);
@@ -1319,9 +1327,12 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
           overflow-y:auto;
           transition:margin-left 0.28s ease;
           margin-left:var(--sidebar-w);
+          width:calc(100% - var(--sidebar-w));
+          min-width:0;
         }
         .main.full-width{
-          margin-left:0;
+          margin-left:0 !important;
+          width:100% !important;
         }
 
         .sidebar-section{padding:1.5rem 1rem 0.5rem;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
@@ -1348,7 +1359,8 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
 
         .history-wrap{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
         .history-toolbar{padding:1.25rem 1.5rem;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
-        table{width:100%;border-collapse:collapse}
+        .table-responsive{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+        table{width:100%;border-collapse:collapse;min-width:600px}
         thead tr{background:var(--surface)}
         th{padding:10px 16px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);text-align:left;border-bottom:1px solid var(--line)}
         td{padding:13px 16px;font-size:13.5px;color:var(--text2);border-bottom:1px solid var(--line)}
@@ -1399,7 +1411,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
 
         .btn-jade{background:var(--jade);color:var(--void);border:none;border-radius:10px;padding:12px 24px;font-family:'Fraunces',serif;font-size:15px;font-weight:700;cursor:pointer}
 
-        .chat-panel{background:var(--card);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-height:580px}
+        .chat-panel{background:var(--card);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-height:580px;width:100%}
         .chat-messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
         .msg{display:flex;gap:10px}
         .msg.user{flex-direction:row-reverse}
@@ -1419,13 +1431,89 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
 
         .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:900;display:flex;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(4px)}
         .modal{background:var(--card);border:1px solid var(--line2);border-radius:20px;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:1.75rem}
-
+        .interactions-grid-wrap {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 1.5rem !important;
+          }
+          .interaction-actions-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 10px !important;
+          }
+          .interaction-actions-row button {
+            width: 100% !important;
+            text-align: center !important;
+          }
+            
+        /* ═══ MOBILE FIXES & HORIZONTAL SCROLL SNAP (< 900px) ═══ */
         @media(max-width:900px){
-          .main{padding:1.5rem;margin-left:0 !important}
-          .sidebar{position:fixed;top:60px;bottom:0;z-index:700}
-          .stat-grid{grid-template-columns:1fr 1fr}
-          .chart-row{grid-template-columns:1fr}
-          .assistant-grid{grid-template-columns:1fr !important}
+          .topbar{padding:0 1rem !important}
+          .nav-subtitle{display:none !important}
+          
+          .main{
+            padding:1.25rem 1rem !important;
+            margin-left:0 !important;
+            width:100% !important;
+            max-width:100vw !important;
+          }
+          
+          .sidebar{
+            position:fixed !important;
+            top:60px !important;
+            bottom:0 !important;
+            left:0 !important;
+            z-index:700 !important;
+            transform:translateX(-100%);
+          }
+          .sidebar:not(.closed){
+            transform:translateX(0) !important;
+          }
+
+          /* Stat Cards Sideways Scroll Carousel */
+          .stat-grid{
+            display:flex !important;
+            flex-direction:row !important;
+            overflow-x:auto !important;
+            scroll-snap-type:x mandatory !important;
+            -webkit-overflow-scrolling:touch !important;
+            gap:12px !important;
+            padding-bottom:10px !important;
+            margin-left:-1rem !important;
+            margin-right:-1rem !important;
+            padding-left:1rem !important;
+            padding-right:1rem !important;
+            scrollbar-width:none !important;
+          }
+          .stat-grid::-webkit-scrollbar{display:none}
+          .stat-card{
+            flex:0 0 68% !important;
+            max-width:68% !important;
+            scroll-snap-align:start !important;
+            min-width:200px !important;
+          }
+
+          /* Convert all multi-column layouts to stack cleanly */
+          .chart-row,
+          .assistant-grid,
+          div[style*="gridTemplateColumns: '1fr 380px'"],
+          div[style*="grid-template-columns: 1fr 380px"],
+          div[style*="gridTemplateColumns: 'minmax(0, 1fr) 320px'"],
+          div[style*="grid-template-columns: minmax(0, 1fr) 320px"],
+          div[style*="gridTemplateColumns: '1fr 1fr'"],
+          div[style*="grid-template-columns: 1fr 1fr"],
+          div[style*="gridTemplateColumns: '280px 1fr'"],
+          div[style*="grid-template-columns: 280px 1fr"] {
+            display:flex !important;
+            flex-direction:column !important;
+            grid-template-columns:1fr !important;
+            width:100% !important;
+            gap:1.25rem !important;
+          }
+
+          .dv-panel{padding:1.5rem 1.25rem !important}
+          .checks{grid-template-columns:1fr !important}
+          .chat-panel{min-height:500px !important}
         }
       `}</style>
 
@@ -1447,7 +1535,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
             </div>
             PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup>
           </Link>
-          <span style={{ fontSize: 13, color: 'var(--text3)' }}>My Dashboard</span>
+          <span className="nav-subtitle" style={{ fontSize: 13, color: 'var(--text3)' }}>My Dashboard</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1537,19 +1625,19 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
           <div className="sidebar-section">Main</div>
           <ul className="sidebar-nav">
             <li>
-              <a className={activeView === 'overview' ? 'active' : ''} onClick={() => setActiveView('overview')}>
+              <a className={activeView === 'overview' ? 'active' : ''} onClick={() => handleNavClick('overview')}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
                 Overview
               </a>
             </li>
             <li>
-              <a className={activeView === 'verify' ? 'active' : ''} onClick={() => setActiveView('verify')}>
+              <a className={activeView === 'verify' ? 'active' : ''} onClick={() => handleNavClick('verify')}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                 Verify Drug
               </a>
             </li>
             <li>
-              <a className={activeView === 'interactions' ? 'active' : ''} onClick={() => setActiveView('interactions')}>
+              <a className={activeView === 'interactions' ? 'active' : ''} onClick={() => handleNavClick('interactions')}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M10.5 6h-6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-6" />
                   <path d="M14 4h6m0 0v6m0-6L10 14" />
@@ -1558,13 +1646,13 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
               </a>
             </li>
             <li>
-              <a className={activeView === 'history' ? 'active' : ''} onClick={() => setActiveView('history')}>
+              <a className={activeView === 'history' ? 'active' : ''} onClick={() => handleNavClick('history')}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                 Scan History
               </a>
             </li>
             <li>
-              <a className={activeView === 'analytics' ? 'active' : ''} onClick={() => setActiveView('analytics')}>
+              <a className={activeView === 'analytics' ? 'active' : ''} onClick={() => handleNavClick('analytics')}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10M12 20V4M6 20v-6" /></svg>
                 Analytics
               </a>
@@ -1574,13 +1662,13 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
           <div className="sidebar-section">Account</div>
           <ul className="sidebar-nav">
             <li>
-              <a className={activeView === 'account' ? 'active' : ''} onClick={() => setActiveView('account')}>
+              <a className={activeView === 'account' ? 'active' : ''} onClick={() => handleNavClick('account')}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                 My Profile
               </a>
             </li>
             <li>
-              <a className={activeView === 'assistant' ? 'active' : ''} onClick={() => setActiveView('assistant')}>
+              <a className={activeView === 'assistant' ? 'active' : ''} onClick={() => handleNavClick('assistant')}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
                 AI Assistant
               </a>
@@ -1588,7 +1676,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                 <li>
                   <a
                     className={activeView === 'chat-history' ? 'active' : ''}
-                    onClick={() => setActiveView('chat-history')}
+                    onClick={() => handleNavClick('chat-history')}
                     style={{
                       fontSize: '12px',
                       color: activeView === 'chat-history' ? 'var(--jade, #00c97a)' : 'var(--text3, #6b7280)',
@@ -1737,56 +1825,58 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                 </div>
               </div>
 
-              <div className="history-wrap">
+                <div className="history-wrap">
                 <div className="history-toolbar">
                   <h3 style={{ fontFamily: 'Fraunces', fontSize: 16 }}>Recent Verifications</h3>
-                  <button onClick={() => setActiveView('history')} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--jade)', cursor: 'pointer', fontSize: 13 }}>
+                  <button onClick={() => handleNavClick('history')} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--jade)', cursor: 'pointer', fontSize: 13 }}>
                     View all →
                   </button>
                 </div>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Drug</th>
-                      <th>Result</th>
-                      <th>Score</th>
-                      <th>Source</th>
-                      <th>Date</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.slice(0, 5).map((r) => (
-                      <tr key={r.id} onClick={() => setSelectedRecord(r)} style={{ cursor: 'pointer' }}>
-                        <td>
-                          <strong>{r.drugName}</strong>
-                          <div style={{ fontSize: 11, color: 'var(--text3)' }}>{r.manufacturer || '—'}</div>
-                        </td>
-                        <td><span className={`status-chip chip-${r.status.toLowerCase()}`}>{r.status}</span></td>
-                        <td><strong>{r.safetyScore}</strong></td>
-                        <td style={{ textTransform: 'capitalize' }}>{r.source || '—'}</td>
-                        <td style={{ color: 'var(--text3)' }}>{r.date}</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            <button className="action-btn" onClick={(e) => { e.stopPropagation(); setSelectedRecord(r); }}>
-                              View
-                            </button>
-                            <button className="action-btn" style={{ color: 'var(--blood)', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => handleDeleteRecord(r.id, e)}>
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {history.length === 0 && (
+                <div className="table-responsive">
+                  <table>
+                    <thead>
                       <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text3)' }}>
-                          No verifications run yet. Click &quot;Verify Drug&quot; to test a medication.
-                        </td>
+                        <th>Drug</th>
+                        <th>Result</th>
+                        <th>Score</th>
+                        <th>Source</th>
+                        <th>Date</th>
+                        <th></th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {history.slice(0, 5).map((r) => (
+                        <tr key={r.id} onClick={() => setSelectedRecord(r)} style={{ cursor: 'pointer' }}>
+                          <td>
+                            <strong>{r.drugName}</strong>
+                            <div style={{ fontSize: 11, color: 'var(--text3)' }}>{r.manufacturer || '—'}</div>
+                          </td>
+                          <td><span className={`status-chip chip-${r.status.toLowerCase()}`}>{r.status}</span></td>
+                          <td><strong>{r.safetyScore}</strong></td>
+                          <td style={{ textTransform: 'capitalize' }}>{r.source || '—'}</td>
+                          <td style={{ color: 'var(--text3)' }}>{r.date}</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <button className="action-btn" onClick={(e) => { e.stopPropagation(); setSelectedRecord(r); }}>
+                                View
+                              </button>
+                              <button className="action-btn" style={{ color: 'var(--blood)', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => handleDeleteRecord(r.id, e)}>
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {history.length === 0 && (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text3)' }}>
+                            No verifications run yet. Click &quot;Verify Drug&quot; to test a medication.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -2068,19 +2158,19 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                 </p>
               </div>
 
-              {/* 2-COLUMN LAYOUT: FORM & RESULTS ON LEFT, RECENT CHECKS ON RIGHT */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '1.75rem', alignItems: 'start' }}>
-                {/* LEFT COLUMN: CHECKER FORM + ACTIVE RESULT */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* RESPONSIVE LAYOUT: FORM & RESULTS ON TOP/LEFT, RECENT CHECKS ON BOTTOM/RIGHT */}
+              <div className="interactions-grid-wrap">
+                {/* CHECKER FORM + ACTIVE RESULT */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0, width: '100%' }}>
                   {/* INPUT CARD */}
-                  <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.5rem' }}>
+                  <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.5rem', width: '100%' }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>
                       Enter Active Ingredients or Brand Names
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
                       {interactionDrugs.map((drug, idx) => (
-                        <div key={idx} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <div key={idx} style={{ display: 'flex', gap: 10, alignItems: 'center', width: '100%' }}>
                           <input
                             type="text"
                             placeholder={`Medication ${idx + 1} (e.g. ${idx === 0 ? 'Augmentin' : 'Cataflam'})`}
@@ -2090,13 +2180,13 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                               updated[idx] = e.target.value;
                               setInteractionDrugs(updated);
                             }}
-                            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 14px', color: '#fff', outline: 'none', fontSize: 13.5 }}
+                            style={{ flex: 1, minWidth: 0, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 14px', color: '#fff', outline: 'none', fontSize: 13.5 }}
                           />
                           {interactionDrugs.length > 2 && (
                             <button
                               type="button"
                               onClick={() => setInteractionDrugs(interactionDrugs.filter((_, i) => i !== idx))}
-                              style={{ background: 'transparent', border: 'none', color: 'var(--blood)', cursor: 'pointer', fontSize: 16, padding: '0 8px' }}
+                              style={{ background: 'transparent', border: 'none', color: 'var(--blood)', cursor: 'pointer', fontSize: 16, padding: '0 8px', flexShrink: 0 }}
                               title="Remove drug"
                             >
                               ✕
@@ -2106,11 +2196,11 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                       ))}
                     </div>
 
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div className="interaction-actions-row">
                       <button
                         type="button"
                         onClick={() => setInteractionDrugs([...interactionDrugs, ''])}
-                        style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--text2)', borderRadius: 8, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+                        style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--text2)', borderRadius: 8, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
                       >
                         + Add Another Drug
                       </button>
@@ -2119,7 +2209,7 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                         className="btn-jade"
                         onClick={handleCheckInteractions}
                         disabled={interactionLoading}
-                        style={{ padding: '9px 24px', fontSize: 13, fontWeight: 600, borderRadius: 8, marginLeft: 'auto' }}
+                        style={{ padding: '10px 20px', fontSize: 13, fontWeight: 600, borderRadius: 8 }}
                       >
                         {interactionLoading ? 'Analyzing Interactions...' : 'Check Interactions →'}
                       </button>
@@ -2381,18 +2471,18 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
               </div>
 
               <div className="history-wrap">
-                <div className="history-toolbar">
+                <div className="history-toolbar" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <input
                     type="text"
                     placeholder="Search drug name..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: '#fff', padding: '7px 12px', borderRadius: 8, outline: 'none' }}
+                    style={{ flex: '1 1 200px', minWidth: 0, background: 'var(--surface)', border: '1px solid var(--line)', color: '#fff', padding: '9px 14px', borderRadius: 8, outline: 'none' }}
                   />
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--text2)', padding: '7px 12px', borderRadius: 8, outline: 'none' }}
+                    style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--text2)', padding: '9px 14px', borderRadius: 8, outline: 'none' }}
                   >
                     <option value="">All results</option>
                     <option value="SAFE">Safe</option>
@@ -2401,59 +2491,61 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                   </select>
                 </div>
 
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Drug</th>
-                      <th>Result</th>
-                      <th>Score</th>
-                      <th>Form</th>
-                      <th>Source</th>
-                      <th>Expiry</th>
-                      <th>Date</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedHistory.map((r) => (
-                      <tr key={r.id} onClick={() => setSelectedRecord(r)} style={{ cursor: 'pointer' }}>
-                        <td>
-                          <strong>{r.drugName}</strong>
-                          <div style={{ fontSize: 11, color: 'var(--text3)' }}>{r.manufacturer || '—'}</div>
-                        </td>
-                        <td><span className={`status-chip chip-${r.status.toLowerCase()}`}>{r.status}</span></td>
-                        <td><strong>{r.safetyScore}</strong></td>
-                        <td style={{ textTransform: 'capitalize' }}>{r.drugForm || '—'}</td>
-                        <td style={{ textTransform: 'capitalize' }}>{r.source || '—'}</td>
-                        <td style={{ color: 'var(--text3)' }}>{r.expiryDate || '—'}</td>
-                        <td style={{ color: 'var(--text3)' }}>{r.date}</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            <button className="action-btn" onClick={(e) => { e.stopPropagation(); setSelectedRecord(r); }}>
-                              View
-                            </button>
-                            <button className="action-btn" style={{ color: 'var(--blood)', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => handleDeleteRecord(r.id, e)}>
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {paginatedHistory.length === 0 && (
+                <div className="table-responsive">
+                  <table>
+                    <thead>
                       <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text3)' }}>
-                          No records match your filters.
-                        </td>
+                        <th>Drug</th>
+                        <th>Result</th>
+                        <th>Score</th>
+                        <th>Form</th>
+                        <th>Source</th>
+                        <th>Expiry</th>
+                        <th>Date</th>
+                        <th></th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {paginatedHistory.map((r) => (
+                        <tr key={r.id} onClick={() => setSelectedRecord(r)} style={{ cursor: 'pointer' }}>
+                          <td>
+                            <strong>{r.drugName}</strong>
+                            <div style={{ fontSize: 11, color: 'var(--text3)' }}>{r.manufacturer || '—'}</div>
+                          </td>
+                          <td><span className={`status-chip chip-${r.status.toLowerCase()}`}>{r.status}</span></td>
+                          <td><strong>{r.safetyScore}</strong></td>
+                          <td style={{ textTransform: 'capitalize' }}>{r.drugForm || '—'}</td>
+                          <td style={{ textTransform: 'capitalize' }}>{r.source || '—'}</td>
+                          <td style={{ color: 'var(--text3)' }}>{r.expiryDate || '—'}</td>
+                          <td style={{ color: 'var(--text3)' }}>{r.date}</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <button className="action-btn" onClick={(e) => { e.stopPropagation(); setSelectedRecord(r); }}>
+                                View
+                              </button>
+                              <button className="action-btn" style={{ color: 'var(--blood)', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => handleDeleteRecord(r.id, e)}>
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {paginatedHistory.length === 0 && (
+                        <tr>
+                          <td colSpan={8} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text3)' }}>
+                            No records match your filters.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-                <div style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--line)', fontSize: 12.5, color: 'var(--text3)' }}>
+                <div style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', fontSize: 12.5, color: 'var(--text3)', flexWrap: 'wrap', gap: 10 }}>
                   <span>Showing {paginatedHistory.length} of {filteredHistory.length}</span>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} style={{ background: 'none', border: '1px solid var(--line)', color: 'var(--text2)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer' }}>Prev</button>
-                    <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} style={{ background: 'none', border: '1px solid var(--line)', color: 'var(--text2)', padding: '4px 10px', borderRadius: 6, cursor: 'pointer' }}>Next</button>
+                    <button disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} style={{ background: 'none', border: '1px solid var(--line)', color: 'var(--text2)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer' }}>Prev</button>
+                    <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} style={{ background: 'none', border: '1px solid var(--line)', color: 'var(--text2)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer' }}>Next</button>
                   </div>
                 </div>
               </div>
