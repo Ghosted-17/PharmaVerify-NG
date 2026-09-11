@@ -1483,10 +1483,23 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
 
         /* ═══ MOBILE FIXES & HORIZONTAL SCROLL SNAP (< 900px) ═══ */
         @media(max-width:900px){
-          .topbar{
-            padding:0 1rem !important;
-            width:100% !important;
-            max-width:100vw !important;
+          .topbar {
+            padding: 0 0.75rem !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            white-space: nowrap !important;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: none !important;
+            gap: 10px !important;
+            justify-content: flex-start !important;
+          }
+          .topbar::-webkit-scrollbar {
+            display: none !important;
+          }
+          .topbar > div {
+            flex-shrink: 0 !important;
           }
           .nav-subtitle{display:none !important}
           
@@ -2954,19 +2967,25 @@ Give clear, sound pharmaceutical advice regarding interactions, contraindication
                     </label>
                   </div>
 
-                  <div style={{ padding: '1rem', borderTop: '1px solid var(--line)', display: 'flex', gap: 10 }}>
+                  <div style={{ padding: '0.85rem 1rem', borderTop: '1px solid var(--line)', display: 'flex', gap: 8, alignItems: 'center' }}>
                     <input
                       type="text"
-                      placeholder="Ask about a drug interaction, contraindication, food warning..."
+                      placeholder="Ask about interactions, side effects..."
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') sendChatMessage();
                       }}
-                      style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 14px', color: '#fff', outline: 'none' }}
+                      style={{ flex: 1, minWidth: 0, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px', color: '#fff', outline: 'none', fontSize: 13 }}
                     />
-                    <button className="btn-jade" onClick={() => sendChatMessage()} disabled={chatLoading} style={{ padding: '10px 20px' }}>
-                      Send
+                    <button
+                      className="btn-jade"
+                      onClick={() => sendChatMessage()}
+                      disabled={chatLoading}
+                      style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      <span>Send</span>
+                      <span style={{ fontSize: 14 }}>↗</span>
                     </button>
                   </div>
                 </div>
