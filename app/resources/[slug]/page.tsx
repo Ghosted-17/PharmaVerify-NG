@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ARTICLES } from '../../../data/articles';
+import BackButton from './BackButton';
 
 export async function generateStaticParams() {
   return ARTICLES.map((article) => ({
@@ -27,9 +28,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </div>
           PharmaVerify<sup style={{ fontSize: 10 }}>NG</sup>
         </Link>
-        <Link href="/?tab=resources" style={{ color: '#00c97a', textDecoration: 'none', fontSize: 13, fontWeight: 600 }}>
-          ← Back to Resources
-        </Link>
+        <BackButton />
       </header>
 
       {/* ARTICLE CONTENT */}

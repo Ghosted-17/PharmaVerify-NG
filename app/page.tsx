@@ -1422,12 +1422,11 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
 
             <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Link
-                href={`/resources/${selectedArticle.slug}`}
-                target="_blank"
-                style={{ fontSize: 12.5, color: '#00c97a', textDecoration: 'none', fontWeight: 600 }}
-              >
-                Open Full Page (SEO Link) ↗
-              </Link>
+  href={`/resources/${selectedArticle.slug}`}
+  style={{ fontSize: 12.5, color: '#00c97a', textDecoration: 'none', fontWeight: 600 }}
+>
+  Open Full Page ↗
+</Link>
               <button
                 onClick={() => setSelectedArticle(null)}
                 style={{ background: '#00c97a', border: 'none', color: '#040a06', fontWeight: 700, borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 12.5 }}
