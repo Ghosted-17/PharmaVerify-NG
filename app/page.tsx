@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ARTICLES, Article } from '../data/articles';
 
 interface Flag {
   type: 'ok' | 'warn' | 'bad';
@@ -24,6 +25,7 @@ export default function HomePage() {
   // Verification Form State
   const [drugName, setDrugName] = useState('');
   const [manufacturer, setManufacturer] = useState('');
+  const [nafdacNum, setNafdacNum] = useState('');
   const [batchNum, setBatchNum] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [storageTemp, setStorageTemp] = useState('');
@@ -38,6 +40,18 @@ export default function HomePage() {
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [verifiedDrug, setVerifiedDrug] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Selected Article for In-App Reader Modal (Option A + B)
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+
+  // Contact Form States (Resend + Supabase)
+  const [contactName, setContactName] = useState('');
+  const [contactOrg, setContactOrg] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactType, setContactType] = useState('General enquiry');
+  const [contactMsg, setContactMsg] = useState('');
+  const [contactSending, setContactSending] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
 
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -58,6 +72,16 @@ export default function HomePage() {
       window.addEventListener('mousemove', handleMouseMove);
     }
     return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // Check URL query on load (e.g. /?tab=resources) so Back button stays on the tab
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && ['home', 'verify', 'services', 'about', 'resources', 'contact'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
   }, []);
 
   const showPage = (pageName: typeof activeTab) => {
@@ -105,24 +129,25 @@ export default function HomePage() {
     }
 
     const activeWarnings = warnings.filter((w) => w !== 'none');
-    const prompt = `You are a pharmaceutical safety expert. Analyse these medication details and return ONLY valid JSON, no markdown, no extra text.
+    const prompt = `You are a pharmaceutical safety expert in Nigeria. Analyse these medication details and cross-check NAFDAC registration conformity, expiration validity, and packaging integrity. Return ONLY valid JSON, no markdown, no extra text.
 
 Details:
 - Name: ${drugName}
 - Manufacturer: ${manufacturer || 'Not given'}
-- Batch: ${batchNum || 'Not given'}
+- NAFDAC Reg Number: ${nafdacNum || 'Not provided'}
+- Batch (optional): ${batchNum || 'Not given'}
 - Expiry: ${expiryDate || 'Not given'} (${expiryStatus})
 - Storage: ${storageTemp || 'Not given'}
 - Packaging: ${packaging || 'Not given'}
 - Drug form: ${drugForm || 'Not given'}
 - Source: ${source || 'Not given'}
-- Visual: ${observations || 'None'}
+- Visual observations: ${observations || 'None'}
 - Warning signs: ${activeWarnings.length ? activeWarnings.join(', ') : 'None'}
 
 Return exactly:
 {"status":"SAFE"|"CAUTION"|"UNSAFE"|"UNKNOWN","safetyScore":<0-100>,"summary":"<2-3 sentences>","flags":[{"type":"ok"|"warn"|"bad","message":"<specific finding>"}],"recommendation":"<clear actionable advice>","proTip":"<one expert tip>"}
 
-Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+changes=UNSAFE. Good storage+intact+no changes=SAFE. Missing info=UNKNOWN. Always recommend consulting a pharmacist.`;
+Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+physical changes=UNSAFE. Standard valid format for NAFDAC NRN is A4-XXXX, 04-XXXX, B4-XXXX. Missing key information=UNKNOWN. Always recommend consulting a licensed pharmacist or physician.`;
 
     try {
       const res = await fetch('/api/gemini', {
@@ -147,6 +172,47 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
     }
   };
 
+ const handleSendContact = async () => {
+    if (!contactName.trim() || !contactEmail.trim() || !contactMsg.trim()) {
+      alert('Please fill out your name, email, and message.');
+      return;
+    }
+    setContactSending(true);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: contactName,
+          organisation: contactOrg,
+          email: contactEmail,
+          enquiryType: contactType,
+          message: contactMsg,
+        }),
+      });
+
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Server returned status ${res.status}. Check terminal logs.`);
+      }
+
+      if (!res.ok) throw new Error(data.error || 'Failed to send');
+      setContactSuccess(true);
+      setContactName('');
+      setContactOrg('');
+      setContactEmail('');
+      setContactMsg('');
+      setTimeout(() => setContactSuccess(false), 5000);
+    } catch (err: any) {
+      alert(err.message || 'Error sending message. Please check your credentials.');
+    } finally {
+      setContactSending(false);
+    }
+  };
+ 
   const statusMap = {
     SAFE: { chip: 'chip-safe', dot: 'dot-safe', label: 'Safe to use', bar: '#00c97a', cls: 'rt-safe' },
     CAUTION: { chip: 'chip-caution', dot: 'dot-caution', label: 'Use with caution', bar: '#f59e0b', cls: 'rt-caution' },
@@ -182,7 +248,8 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           --white:#ffffff;
         }
 
-        html{scroll-behavior:smooth;overflow-x:hidden}
+        html{overflow-x:hidden}
+html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;overflow-x:hidden;cursor:default}
 
         /* ═══ CURSOR ═══ */
@@ -233,7 +300,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         .hero-kicker{display:inline-flex;align-items:center;gap:8px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.2);color:var(--jade);font-size:11.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:6px 16px;border-radius:20px;margin-bottom:2rem;animation:fadeUp 0.6s 0.1s both}
         .hero h1{font-family:'Fraunces',serif;font-size:clamp(3rem,7vw,5.5rem);font-weight:700;line-height:1.03;letter-spacing:-2px;margin-bottom:1.5rem;animation:fadeUp 0.6s 0.2s both}
         .hero h1 em{font-style:italic;color:var(--jade)}
-        .hero-sub{font-size:17px;line-height:1.75;color:var(--text2);font-weight:300;max-width:520px;margin:0 auto 2.5rem;animation:fadeUp 0.6s 0.3s both}
+        .hero-sub{font-size:17px;line-height:1.75;color:var(--text2);font-weight:300;max-width:540px;margin:0 auto 2.5rem;animation:fadeUp 0.6s 0.3s both}
         .hero-actions{display:flex;align-items:center;justify-content:center;gap:12px;animation:fadeUp 0.6s 0.4s both}
         .hero-btn{padding:14px 32px;border-radius:10px;font-family:'Epilogue',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.1px;border:none}
         .hero-btn.jade{background:var(--jade);color:var(--void)}
@@ -454,9 +521,6 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         /* ═══ ANIMATIONS ═══ */
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         .fade-in{animation:fadeUp 0.6s ease both}
-        .delay-1{animation-delay:0.1s}
-        .delay-2{animation-delay:0.2s}
-        .delay-3{animation-delay:0.3s}
 
         /* ═══ RESPONSIVE ═══ */
         @media(max-width:900px){
@@ -494,7 +558,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           <div className="topbar-badge">System Operational</div>
           <span>24/7 Pharmaceutical Verification Services</span>
         </div>
-        <div>Nigeria · FDA Aligned · WHO Compliant</div>
+        <div>Nigeria · NAFDAC Aligned · WHO Compliant</div>
       </div>
 
       {/* NAV */}
@@ -550,7 +614,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               Pharmaceutical Safety Authority
             </div>
             <h1>Drug Verification<br />You Can <em>Trust</em></h1>
-            <p className="hero-sub">PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> uses AI-powered analysis to assess the safety, authenticity, and condition of pharmaceutical products — in seconds.</p>
+            <p className="hero-sub">PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> cross-checks medication details, NAFDAC registration alignment, and storage conditions with AI-powered clinical intelligence.</p>
             <div className="hero-actions">
               <button className="hero-btn jade" onClick={() => showPage('verify')}>Start Verification →</button>
               <button className="hero-btn outline" onClick={() => showPage('services')}>Our Services</button>
@@ -588,7 +652,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               <div>
                 <div className="section-kicker">Why PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup></div>
                 <h2 className="section-title">Counterfeit drugs are<br />a silent epidemic</h2>
-                <p className="section-sub">Over 100,000 deaths occur annually due to substandard and counterfeit medicines. PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> gives patients, pharmacies, and healthcare providers a fast, intelligent layer of protection.</p>
+                <p className="section-sub">Over 100,000 deaths occur annually due to substandard and counterfeit medicines in Africa. PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> gives patients, pharmacies, and healthcare providers an immediate, intelligent layer of verification.</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '2.5rem' }}>
                   <div style={{ padding: '1.5rem', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14 }}>
                     <div style={{ fontFamily: 'Fraunces', fontSize: '28px', fontWeight: 700, color: 'var(--blood)' }}>1 in 10</div>
@@ -606,8 +670,8 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                   </div>
                   <div>
-                    <div style={{ fontFamily: 'Fraunces', fontSize: '15px', fontWeight: 700, color: 'var(--white)', marginBottom: 4 }}>Expiry & Authenticity</div>
-                    <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.6 }}>Instant validation of expiry dates, batch numbers, and manufacturer authenticity.</div>
+                    <div style={{ fontFamily: 'Fraunces', fontSize: '15px', fontWeight: 700, color: 'var(--white)', marginBottom: 4 }}>NAFDAC &amp; Regulatory Alignment</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.6 }}>Validates NAFDAC registration numbers (NRN) and ensures the drug name and licensed manufacturer match official databases.</div>
                   </div>
                 </div>
                 <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.5rem', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
@@ -615,8 +679,8 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" /><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" /></svg>
                   </div>
                   <div>
-                    <div style={{ fontFamily: 'Fraunces', fontSize: '15px', fontWeight: 700, color: 'var(--white)', marginBottom: 4 }}>Condition Analysis</div>
-                    <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.6 }}>Evaluates physical condition, packaging integrity, storage suitability, and visual changes.</div>
+                    <div style={{ fontFamily: 'Fraunces', fontSize: '15px', fontWeight: 700, color: 'var(--white)', marginBottom: 4 }}>Condition &amp; Integrity Analysis</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.6 }}>Evaluates physical tablet/liquid state, packaging integrity, storage temperature suitability, and observed degradation signs.</div>
                   </div>
                 </div>
                 <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.5rem', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
@@ -624,8 +688,8 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 8v4l3 3" /></svg>
                   </div>
                   <div>
-                    <div style={{ fontFamily: 'Fraunces', fontSize: '15px', fontWeight: 700, color: 'var(--white)', marginBottom: 4 }}>Instant Results</div>
-                    <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.6 }}>Receive a full safety report with a score, key findings, and actionable recommendations.</div>
+                    <div style={{ fontFamily: 'Fraunces', fontSize: '15px', fontWeight: 700, color: 'var(--white)', marginBottom: 4 }}>Instant Safety Assessment</div>
+                    <div style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.6 }}>Receive a clear safety status, numerical safety score, specific risk findings, and actionable pharmacist recommendations.</div>
                   </div>
                 </div>
               </div>
@@ -645,7 +709,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               <div style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
                 <div style={{ width: 56, height: 56, background: 'var(--jade)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'Fraunces', fontSize: 20, fontWeight: 700, color: 'var(--void)' }}>1</div>
                 <h4 style={{ fontFamily: 'Fraunces', fontSize: 16, fontWeight: 700, color: 'var(--white)', marginBottom: '0.5rem' }}>Enter Details</h4>
-                <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Input the drug name, expiry, manufacturer, and batch number.</p>
+                <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Input the drug name, manufacturer, expiry, and NAFDAC registration number.</p>
               </div>
               <div style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
                 <div style={{ width: 56, height: 56, background: 'var(--card)', border: '2px solid var(--jade-dim)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'Fraunces', fontSize: 20, fontWeight: 700, color: 'var(--jade)' }}>2</div>
@@ -671,7 +735,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
 
         {/* TRUST STRIP */}
         <div className="trust-strip">
-          <div className="trust-label">Trusted by healthcare institutions across Africa</div>
+          <div className="trust-label">Aligned with healthcare standards across Africa</div>
           <div className="trust-logos">
             <div className="trust-logo">NAFDAC</div>
             <div className="trust-logo">WHO Africa</div>
@@ -709,7 +773,11 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                   <input type="text" placeholder="e.g. Emzor, GSK, Pfizer" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} />
                 </div>
                 <div className="field">
-                  <label>Batch / Lot Number</label>
+                  <label>NAFDAC Registration Number (NRN)</label>
+                  <input type="text" placeholder="e.g. 04-5808 or A4-0123" value={nafdacNum} onChange={(e) => setNafdacNum(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Batch / Lot Number (Optional)</label>
                   <input type="text" placeholder="e.g. BTX-2023-441" value={batchNum} onChange={(e) => setBatchNum(e.target.value)} />
                 </div>
                 <div className="field">
@@ -752,7 +820,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                     <option value="other">Other</option>
                   </select>
                 </div>
-                <div className="field">
+                <div className="field full">
                   <label>Source of Acquisition</label>
                   <select value={source} onChange={(e) => setSource(e.target.value)}>
                     <option value="">Where was it purchased?</option>
@@ -867,12 +935,12 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               <div className="info-widget">
                 <h3>What We Assess</h3>
                 <ul className="check-list">
-                  <li><div className="cl-num">1</div><span>Expiry validity — expired or approaching end-of-life</span></li>
-                  <li><div className="cl-num">2</div><span>Temperature & storage suitability</span></li>
-                  <li><div className="cl-num">3</div><span>Packaging integrity & tamper evidence</span></li>
-                  <li><div className="cl-num">4</div><span>Physical appearance — color, odor, texture</span></li>
-                  <li><div className="cl-num">5</div><span>Acquisition source risk assessment</span></li>
-                  <li><div className="cl-num">6</div><span>Counterfeit likelihood indicators</span></li>
+                  <li><div className="cl-num">1</div><span>NAFDAC registration &amp; manufacturer alignment</span></li>
+                  <li><div className="cl-num">2</div><span>Expiry validity — expired or approaching end-of-life</span></li>
+                  <li><div className="cl-num">3</div><span>Temperature &amp; storage suitability</span></li>
+                  <li><div className="cl-num">4</div><span>Packaging integrity &amp; tamper evidence</span></li>
+                  <li><div className="cl-num">5</div><span>Physical appearance — color, odor, texture</span></li>
+                  <li><div className="cl-num">6</div><span>Acquisition source risk assessment</span></li>
                 </ul>
               </div>
               <div className="warn-box">
@@ -890,7 +958,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div className="section-kicker">What We Offer</div>
             <h1 className="section-title" style={{ fontSize: 'clamp(2.5rem,5vw,4rem)', maxWidth: 600 }}>Comprehensive Pharmaceutical Safety Services</h1>
-            <p className="section-sub">From individual drug checks to enterprise-grade batch verification, PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> provides a full suite of pharmaceutical safety tools.</p>
+            <p className="section-sub">From individual NAFDAC verification to enterprise pharmacy compliance systems, PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> provides a full suite of pharmaceutical safety tools.</p>
           </div>
         </div>
         <section style={{ background: 'var(--deep)' }}>
@@ -899,37 +967,37 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               <div className="service-card">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></div>
                 <h3>Drug Safety Verification</h3>
-                <p>Submit drug details and receive an instant AI-powered safety score covering expiry, storage, packaging, and visual condition — all in under 5 seconds.</p>
+                <p>Submit medication details and receive an instant AI-powered safety score covering NAFDAC registry alignment, expiry, storage, and packaging condition.</p>
                 <div className="service-tag">Free · Instant</div>
               </div>
               <div className="service-card">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg></div>
-                <h3>Batch Verification API</h3>
-                <p>Integrate our verification engine into your pharmacy or hospital system via REST API. Process thousands of batch numbers automatically.</p>
+                <h3>Registry Verification API</h3>
+                <p>Integrate our verification engine into your pharmacy or hospital management system via REST API to automatically cross-check medications with regulatory registries.</p>
                 <div className="service-tag">Enterprise · API</div>
               </div>
               <div className="service-card">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg></div>
                 <h3>Regulatory Compliance Reports</h3>
-                <p>Generate official-grade pharmaceutical compliance documentation aligned with NAFDAC, WHO, and international regulatory standards.</p>
+                <p>Generate official pharmaceutical compliance documentation aligned with NAFDAC, WHO, and international pharmacovigilance standards.</p>
                 <div className="service-tag">Professional · PDF Reports</div>
               </div>
               <div className="service-card">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 20V10M12 20V4M6 20v-6" /></svg></div>
-                <h3>Pharmacy Analytics Dashboard</h3>
-                <p>Monitor your entire drug inventory health with real-time analytics, expiry tracking, and automated alerts for at-risk stock.</p>
+                <h3>Pharmacy Inventory Insights</h3>
+                <p>Monitor dispensary safety and inventory integrity with real-time analytics, expiry tracking, and automated alerts for at-risk stock.</p>
                 <div className="service-tag">Dashboard · Analytics</div>
               </div>
               <div className="service-card">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 8v4l3 3" /></svg></div>
-                <h3>Counterfeit Detection</h3>
-                <p>Advanced AI pattern recognition identifies potential counterfeit drugs by cross-referencing packaging inconsistencies, labeling errors, and batch anomalies.</p>
+                <h3>Counterfeit Risk Detection</h3>
+                <p>Advanced AI pattern recognition identifies potential counterfeit indicators by cross-referencing packaging anomalies, mislabeled strengths, and NAFDAC registry mismatches.</p>
                 <div className="service-tag">AI-Powered · Advanced</div>
               </div>
               <div className="service-card">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg></div>
-                <h3>Training & Certification</h3>
-                <p>Equip your healthcare team with pharmaceutical safety training programs, including drug inspection techniques and regulatory awareness.</p>
+                <h3>Training &amp; Certification</h3>
+                <p>Equip your dispensary team with pharmaceutical safety training programs, including visual inspection techniques and regulatory counterfeit awareness.</p>
                 <div className="service-tag">Training · Certification</div>
               </div>
             </div>
@@ -945,13 +1013,13 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             <div className="features-grid">
               <div className="feat-cell"><div className="feat-num">01</div><h4>AI-Powered</h4><p>High-precision neural analysis trained on pharmaceutical safety data and clinical guidelines.</p></div>
               <div className="feat-cell"><div className="feat-num">02</div><h4>NAFDAC Aligned</h4><p>All assessments reference Nigerian and international pharmaceutical regulatory standards.</p></div>
-              <div className="feat-cell"><div className="feat-num">03</div><h4>Audit Trail</h4><p>Every verification is logged with timestamps for compliance and accountability purposes.</p></div>
-              <div className="feat-cell"><div className="feat-num">04</div><h4>Multi-language</h4><p>Reports available in English, French, and Hausa to serve diverse healthcare communities.</p></div>
+              <div className="feat-cell"><div className="feat-num">03</div><h4>Audit Trail</h4><p>Every verification is logged with timestamps for compliance and personal health records.</p></div>
+              <div className="feat-cell"><div className="feat-num">04</div><h4>Multi-language</h4><p>Educational materials and guidance available in English, French, and Hausa.</p></div>
             </div>
           </div>
         </div>
 
-        <div className="pricing-section">
+        <div className="pricing-section" id="pricing">
           <div className="section-inner">
             <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
               <div className="section-kicker">Pricing</div>
@@ -966,7 +1034,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                 <ul className="price-features">
                   <li>20 verifications per month</li>
                   <li>Basic safety report</li>
-                  <li>Expiry & condition check</li>
+                  <li>NAFDAC number &amp; condition check</li>
                   <li>Email support</li>
                 </ul>
                 <button className="price-btn" onClick={() => showPage('verify')}>Get Started →</button>
@@ -974,12 +1042,12 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               <div className="price-card featured">
                 <div className="price-name">Professional</div>
                 <div className="price-amount">₦15,000<span className="price-period">/month</span></div>
-                <div className="price-desc">For pharmacies, clinics, and healthcare professionals needing reliable daily verification.</div>
+                <div className="price-desc">For community pharmacies and healthcare clinics running frequent checks.</div>
                 <ul className="price-features">
                   <li>Unlimited verifications</li>
                   <li>Full AI safety report + PDF</li>
-                  <li>Batch & inventory tracking</li>
-                  <li>Counterfeit detection</li>
+                  <li>NAFDAC registry cross-matching</li>
+                  <li>Drug interaction checker tool</li>
                   <li>Priority support</li>
                 </ul>
                 <button className="price-btn featured-btn">Start Free Trial →</button>
@@ -1036,7 +1104,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                 <div className="team-avatar">EB</div>
                 <div className="team-info">
                   <h4>Dr. Emmanuel Bamigboye</h4>
-                  <div className="role">CEO & Co-founder</div>
+                  <div className="role">CEO &amp; Co-founder</div>
                   <p>PharmD, 15 years in pharmaceutical regulation and public health policy.</p>
                 </div>
               </div>
@@ -1044,7 +1112,7 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                 <div className="team-avatar">KI</div>
                 <div className="team-info">
                   <h4>Kofi Ibrahim</h4>
-                  <div className="role">CTO & Co-founder</div>
+                  <div className="role">CTO &amp; Co-founder</div>
                   <p>ML engineer, formerly at Google Health. Leads AI model development.</p>
                 </div>
               </div>
@@ -1069,12 +1137,12 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         </div>
         <section style={{ background: 'var(--deep)' }}>
           <div className="section-inner">
-            <div className="section-kicker">Certifications & Standards</div>
-            <h2 className="section-title">Compliance & Accreditation</h2>
+            <div className="section-kicker">Certifications &amp; Standards</div>
+            <h2 className="section-title">Compliance &amp; Accreditation</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.5rem', marginTop: '2.5rem' }}>
               <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
                 <div style={{ fontFamily: 'Fraunces', fontSize: 22, fontWeight: 700, color: 'var(--jade)', marginBottom: '0.5rem' }}>NAFDAC</div>
-                <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Registered and compliant with Nigeria&apos;s National Agency for Food and Drug Administration and Control.</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Aligned with guidelines and registration data from Nigeria&apos;s National Agency for Food and Drug Administration and Control.</div>
               </div>
               <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
                 <div style={{ fontFamily: 'Fraunces', fontSize: 22, fontWeight: 700, color: 'var(--jade)', marginBottom: '0.5rem' }}>WHO GMP</div>
@@ -1096,43 +1164,16 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             <div className="section-kicker">Knowledge Hub</div>
             <h1 className="section-title" style={{ fontSize: 'clamp(2.2rem,5vw,3.5rem)' }}>Resources &amp; Education</h1>
             <p className="section-sub">Evidence-based guides, safety checklists, and expert articles to help you make informed pharmaceutical decisions.</p>
+            
             <div className="resources-grid">
-              <div className="resource-card">
-                <div className="resource-tag">Guide</div>
-                <h3>How to Spot Counterfeit Medicines</h3>
-                <p>Learn the 12 visual and physical signs that indicate a drug may be counterfeit or substandard, with photo references for common medications.</p>
-                <div className="resource-meta">8 min read</div>
-              </div>
-              <div className="resource-card">
-                <div className="resource-tag">Checklist</div>
-                <h3>Pharmacy Storage Compliance Checklist</h3>
-                <p>A printable 40-point checklist for pharmacies to audit medication storage conditions against WHO and NAFDAC standards.</p>
-                <div className="resource-meta">Free Download</div>
-              </div>
-              <div className="resource-card">
-                <div className="resource-tag">Article</div>
-                <h3>Understanding Expiry Dates: What They Really Mean</h3>
-                <p>A deep-dive into pharmaceutical expiry dating — why drugs degrade, what &quot;use by&quot; vs &quot;expiry&quot; means, and when it&apos;s truly unsafe to use.</p>
-                <div className="resource-meta">12 min read</div>
-              </div>
-              <div className="resource-card">
-                <div className="resource-tag">Video Series</div>
-                <h3>Drug Storage Best Practices for Healthcare Workers</h3>
-                <p>A 6-part video series covering temperature-sensitive drugs, cold chain management, and storage in low-resource settings.</p>
-                <div className="resource-meta">6 videos · 45 min total</div>
-              </div>
-              <div className="resource-card">
-                <div className="resource-tag">Research</div>
-                <h3>2024 Report: Substandard Medicines in West Africa</h3>
-                <p>Our annual research report surveying pharmaceutical quality across 8 West African nations, with findings from 15,000+ sample tests.</p>
-                <div className="resource-meta">PDF · 84 pages</div>
-              </div>
-              <div className="resource-card">
-                <div className="resource-tag">Tool</div>
-                <h3>Drug Interaction Awareness Guide</h3>
-                <p>Understand how common medications interact with each other and with food — an essential reference for patients and healthcare workers.</p>
-                <div className="resource-meta">Interactive tool</div>
-              </div>
+              {ARTICLES.map((art) => (
+                <div key={art.slug} className="resource-card" onClick={() => setSelectedArticle(art)}>
+                  <div className="resource-tag">{art.tag}</div>
+                  <h3>{art.title}</h3>
+                  <p>{art.summary}</p>
+                  <div className="resource-meta">{art.readTime} · Read Article →</div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -1152,16 +1193,16 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                   a: 'Our AI achieves 98.4% accuracy on standard verification scenarios when complete information is provided. Accuracy decreases when key fields like expiry date and manufacturer are left blank. We continuously train and improve our models using real-world pharmaceutical data.',
                 },
                 {
-                  q: 'Is my data stored or shared?',
-                  a: 'Verification queries are processed securely and anonymously. We do not store personally identifiable information from free-tier checks. Enterprise users with accounts have full audit logs accessible only to their organization administrators.',
+                  q: 'How do you verify drug authenticity without manufacturer batch data?',
+                  a: 'We cross-reference the drug name, dosage form, and licensed manufacturer directly against official NAFDAC registration records. By verifying that the NAFDAC Registration Number (NRN) legitimately belongs to the specific product and manufacturer, we flag unauthorized, unapproved, or misbranded medications.',
                 },
                 {
                   q: 'Can PharmaVerify NG detect all types of counterfeit drugs?',
-                  a: 'PharmaVerify NG can flag high-risk indicators associated with counterfeit drugs — such as label inconsistencies, unexpected physical changes, suspicious acquisition sources, and batch number anomalies. However, definitive counterfeit detection requires laboratory testing. We recommend reporting suspected counterfeits to NAFDAC.',
+                  a: 'PharmaVerify NG flags high-risk indicators associated with counterfeit drugs — such as NRN registration mismatches, visual tablet irregularities, suspicious acquisition channels, and packaging tampering. However, definitive chemical purity analysis requires laboratory assays.',
                 },
                 {
                   q: 'Do you offer an API for hospitals and pharmacies?',
-                  a: 'Yes. Our Enterprise plan includes full REST API access for integrating drug verification into pharmacy management systems, hospital dispensary software, and supply chain platforms. Contact our sales team for documentation and a free integration trial.',
+                  a: 'Yes. Our Enterprise plan includes REST API access for integrating drug verification into pharmacy management systems, dispensary software, and procurement workflows. Contact our team for documentation.',
                 },
               ].map((item, idx) => {
                 const isOpen = openFaq === idx;
@@ -1188,39 +1229,87 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             <div className="contact-info">
               <div className="section-kicker">Get in Touch</div>
               <h2>Let&apos;s talk about pharmaceutical safety</h2>
-              <p>Whether you&apos;re a pharmacy looking for a bulk plan, a hospital needing API integration, or a patient with a question — we&apos;re here to help.</p>
+              <p>Whether you&apos;re a community pharmacy, hospital team needing API integration, or a patient reporting a counterfeit — we&apos;re here to assist.</p>
               <div className="contact-methods">
                 <div className="contact-method">
-                  <div className="cm-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg></div>
-                  <div><div className="cm-label">Email</div><div className="cm-val">hello@medverify.ng</div></div>
+                  <div className="cm-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                  </div>
+                  <div>
+                    <div className="cm-label">Official Email</div>
+                    <div className="cm-val">krizzyworld9@gmail.com</div>
+                  </div>
                 </div>
                 <div className="contact-method">
-                  <div className="cm-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.64A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.9a16 16 0 006.29 6.29l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg></div>
-                  <div><div className="cm-label">Phone</div><div className="cm-val">+234 (0) 800 MED-VERIFY</div></div>
+                  <div className="cm-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.64A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.9a16 16 0 006.29 6.29l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>
+                  </div>
+                  <div>
+                    <div className="cm-label">Phone &amp; WhatsApp Support</div>
+                    <div className="cm-val">+234 812 321 7487</div>
+                  </div>
                 </div>
                 <div className="contact-method">
-                  <div className="cm-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg></div>
-                  <div><div className="cm-label">Office</div><div className="cm-val">12 Bourdillon Road, Ikoyi<br />Lagos, Nigeria</div></div>
+                  <div className="cm-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                  </div>
+                  <div>
+                    <div className="cm-label">Office Location</div>
+                    <div className="cm-val">Lagos, Nigeria</div>
+                  </div>
                 </div>
                 <div className="contact-method">
-                  <div className="cm-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg></div>
-                  <div><div className="cm-label">Support Hours</div><div className="cm-val">Mon–Fri, 8am–6pm WAT</div></div>
+                  <div className="cm-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                  </div>
+                  <div>
+                    <div className="cm-label">Service Hours</div>
+                    <div className="cm-val">Mon–Fri, 8:00 AM – 6:00 PM WAT</div>
+                  </div>
                 </div>
               </div>
             </div>
+
             <div className="contact-form">
               <h3>Send Us a Message</h3>
               <div className="form-grid">
-                <div className="field"><label>Full Name</label><input type="text" placeholder="Dr. John Doe" /></div>
-                <div className="field"><label>Organisation</label><input type="text" placeholder="Your hospital or pharmacy" /></div>
-                <div className="field full"><label>Email Address</label><input type="email" placeholder="you@example.com" /></div>
+                <div className="field">
+                  <label>Full Name *</label>
+                  <input type="text" placeholder="e.g. Pharm. Adeyemi" value={contactName} onChange={(e) => setContactName(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Organisation</label>
+                  <input type="text" placeholder="e.g. MedPlus Pharmacy" value={contactOrg} onChange={(e) => setContactOrg(e.target.value)} />
+                </div>
+                <div className="field full">
+                  <label>Email Address *</label>
+                  <input type="email" placeholder="you@example.com" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+                </div>
                 <div className="field full">
                   <label>Enquiry Type</label>
-                  <select><option value="">Select a topic</option><option>General enquiry</option><option>API / Enterprise plan</option><option>Report a counterfeit</option><option>Partnership</option><option>Media</option></select>
+                  <select value={contactType} onChange={(e) => setContactType(e.target.value)}>
+                    <option value="General enquiry">General enquiry</option>
+                    <option value="API / Enterprise plan">API / Enterprise plan</option>
+                    <option value="Report a counterfeit">Report a suspected counterfeit</option>
+                    <option value="Partnership">Partnership</option>
+                    <option value="Media">Media / Press</option>
+                  </select>
                 </div>
-                <div className="field full"><label>Message</label><textarea style={{ minHeight: 120 }} placeholder="Tell us how we can help…"></textarea></div>
+                <div className="field full">
+                  <label>Message *</label>
+                  <textarea style={{ minHeight: 120 }} placeholder="How can our clinical team help you?" value={contactMsg} onChange={(e) => setContactMsg(e.target.value)}></textarea>
+                </div>
               </div>
-              <button className="submit-btn" onClick={() => alert('Message sent! We will respond within 24 hours.')}>Send Message →</button>
+
+              <button className="submit-btn" onClick={handleSendContact} disabled={contactSending}>
+                {contactSending ? 'Dispatching Message...' : 'Send Message →'}
+              </button>
+
+              {contactSuccess && (
+                <div style={{ color: '#00c97a', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
+                  ✓ Message received! Our team will respond within 24 hours.
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -1247,22 +1336,22 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                 <li><a href="#" onClick={(e) => { e.preventDefault(); showPage('verify'); }}>Verify Drug</a></li>
                 <li><a href="#" onClick={(e) => { e.preventDefault(); showPage('services'); }}>Services</a></li>
                 <li>
-  <a
-    href="#"
-    onClick={(e) => {
-      e.preventDefault();
-      showPage('services');
-      setTimeout(() => {
-        const el = document.getElementById('pricing') || document.querySelector('.pricing-section');
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    }}
-  >
-    Pricing
-  </a>
-</li>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      showPage('services');
+                      setTimeout(() => {
+                        const el = document.getElementById('pricing') || document.querySelector('.pricing-section');
+                        if (el) {
+                          el.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }, 100);
+                    }}
+                  >
+                    Pricing
+                  </a>
+                </li>
               </ul>
             </div>
             <div className="footer-col">
@@ -1293,6 +1382,62 @@ Rules: expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           </div>
         </div>
       </footer>
+
+      {/* IN-APP ARTICLE READER MODAL (OPTION A + B) */}
+      {selectedArticle && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', backdropFilter: 'blur(5px)' }}
+          onClick={() => setSelectedArticle(null)}
+        >
+          <div
+            style={{ background: '#101c14', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, width: '100%', maxWidth: 680, maxHeight: '85vh', overflowY: 'auto', padding: '2rem', position: 'relative' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+              <div>
+                <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', color: '#00c97a', letterSpacing: 1.2 }}>
+                  {selectedArticle.tag} · {selectedArticle.readTime}
+                </span>
+                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, color: '#fff', marginTop: 4, lineHeight: 1.3 }}>
+                  {selectedArticle.title}
+                </h2>
+              </div>
+              <button
+                onClick={() => setSelectedArticle(null)}
+                style={{ background: 'none', border: 'none', color: '#9ab0a0', fontSize: 20, cursor: 'pointer', padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: 14, color: '#9ab0a0', fontStyle: 'italic', marginBottom: '1.5rem', borderLeft: '3px solid #00c97a', paddingLeft: 10, lineHeight: 1.6 }}>
+              {selectedArticle.summary}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: 13.5, color: '#d0ddd4', lineHeight: 1.75 }}>
+              {selectedArticle.content.map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+
+            <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Link
+                href={`/resources/${selectedArticle.slug}`}
+                target="_blank"
+                style={{ fontSize: 12.5, color: '#00c97a', textDecoration: 'none', fontWeight: 600 }}
+              >
+                Open Full Page (SEO Link) ↗
+              </Link>
+              <button
+                onClick={() => setSelectedArticle(null)}
+                style={{ background: '#00c97a', border: 'none', color: '#040a06', fontWeight: 700, borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 12.5 }}
+              >
+                Done Reading
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
