@@ -364,6 +364,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           justify-content: space-between;
           width: 100%;
         }
+        .nav-logo-group{display:inline-flex;align-items:center;gap:11px}
         .nav-tabs{display:flex;align-items:center;gap:0}
         .nav-tab{padding:0 18px;height:68px;display:flex;align-items:center;font-size:13.5px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;letter-spacing:0.1px;position:relative}
         .nav-tab:hover{color:var(--text)}
@@ -860,28 +861,31 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             text-align: center;
           }
 
-          /* Scaled-down phone for mobile */
+          /* Properly Proportioned Phone & Tablet for Sideways Swipe */
           .stage-phone-perspective.mobile-snap-item {
-            flex: 0 0 240px !important;
-            max-width: 240px !important;
+            flex: 0 0 82% !important;
+            max-width: 300px !important;
+            scroll-snap-align: center !important;
           }
           .stage-phone-perspective.mobile-snap-item .stage-phone-wrapper {
-            width: 235px !important;
-            padding: 8px !important;
-            border-radius: 28px !important;
+            width: 290px !important;
+            padding: 10px !important;
+            border-radius: 34px !important;
           }
           .stage-phone-perspective.mobile-snap-item .stage-phone-inner {
-            min-height: 300px !important;
-            border-radius: 22px !important;
+            min-height: 350px !important;
+            border-radius: 24px !important;
           }
           .stage-phone-perspective.mobile-snap-item .stage-phone-notch {
-            width: 70px !important;
-            height: 12px !important;
-            margin: 0 auto 8px !important;
+            width: 85px !important;
+            height: 15px !important;
+            margin: 0 auto 10px !important;
           }
+
           .stage-laptop-perspective.mobile-snap-item {
-            flex: 0 0 300px !important;
-            max-width: 300px !important;
+            flex: 0 0 84% !important;
+            max-width: 320px !important;
+            scroll-snap-align: center !important;
           }
         }
 
@@ -897,11 +901,46 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         }
         @media(max-width:600px){
           .services-grid,.features-grid,.pricing-grid,.team-grid,.resources-grid,.footer-top{grid-template-columns:1fr}
-          nav{padding:0 1rem}
-          .menu-toggle{display:flex}
+
+          /* Sideways scrollable navbar on mobile */
+          nav {
+            padding: 0 0.85rem !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 12px !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            white-space: nowrap !important;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: none !important;
+          }
+          nav::-webkit-scrollbar {
+            display: none !important;
+          }
+          .nav-logo-group {
+            display: inline-flex !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+          }
+          .nav-right {
+            display: inline-flex !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+            margin-left: auto !important;
+          }
+          .nav-right .btn-ghost {
+            display: none !important;
+          }
+          .nav-right .btn-primary {
+            white-space: nowrap !important;
+            padding: 8px 14px !important;
+            font-size: 12.5px !important;
+          }
+
+          .menu-toggle{display:flex; flex-shrink: 0}
           .nav-tabs{display:${mobileNavOpen ? 'flex' : 'none'};position:absolute;top:68px;left:0;right:0;background:var(--card);border-bottom:1px solid var(--line);flex-direction:column;padding:0.5rem 0;z-index:499;box-shadow:0 20px 40px rgba(0,0,0,0.4)}
           .nav-tab{height:auto;padding:14px 1.5rem;border-bottom:1px solid var(--line);width:100%}
-          .nav-right .btn-ghost{display:none !important}
           .nav-mobile-actions{display:flex;flex-direction:column;gap:8px;padding:1rem 1.5rem;border-top:1px solid var(--line);margin-top:0.5rem}
           .nav-mobile-actions a{width:100%;text-align:center;text-decoration:none;padding:12px;border-radius:8px;font-family:'epilogue',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
           .topbar{flex-direction:column;align-items:center;gap:5px;padding:10px 1rem;text-align:center}
@@ -927,53 +966,55 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
 
         {/* NAV */}
         <nav>
-          <button className="menu-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)} title="Menu">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
+          <div className="nav-logo-group">
+            <button className="menu-toggle" style={{ marginRight: '8px' }} onClick={() => setMobileNavOpen(!mobileNavOpen)} title="Menu">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
 
-          <div
-            onClick={() => showPage('home')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '11px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              textDecoration: 'none'
-            }}
-          >
             <div
+              onClick={() => showPage('home')}
               style={{
-                width: '38px',
-                height: '38px',
-                background: 'linear-gradient(180deg, #14281d 0%, #0b1711 100%)',
-                border: '1.2px solid rgba(0, 201, 122, 0.55)',
-                borderRadius: '11px',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 10px rgba(0, 201, 122, 0.18)',
-                flexShrink: 0
+                gap: '11px',
+                cursor: 'pointer',
+                userSelect: 'none',
+                textDecoration: 'none'
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
-                <path d="M12 2.5 L20 5.5 V12.5 C20 17.5 16.5 20.8 12 22 C7.5 20.8 4 17.5 4 12.5 V5.5 Z" stroke="rgba(0,201,122,0.4)" strokeWidth="1.4" />
-                <path d="M12 7 V16 M7.5 11.5 H16.5" stroke="#00c97a" strokeWidth="2.4" strokeLinecap="round" />
-                <circle cx="12" cy="11.5" r="1.8" fill="#00e68a" />
-              </svg>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
-              <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '21px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.3px' }}>
-                Pharma
-              </span>
-              <span style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', fontSize: '24px', fontWeight: 700, color: '#00c97a', letterSpacing: '-0.2px', marginLeft: '1px' }}>
-                Verify
-              </span>
-              <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '8.5px', fontWeight: 800, letterSpacing: '0.8px', color: '#00c97a', background: 'rgba(0,201,122,0.08)', border: '1px solid rgba(0,201,122,0.3)', borderRadius: '4px', padding: '2px 5px', marginLeft: '6px', lineHeight: 1 }}>
-                NG
-              </span>
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  background: 'linear-gradient(180deg, #14281d 0%, #0b1711 100%)',
+                  border: '1.2px solid rgba(0, 201, 122, 0.55)',
+                  borderRadius: '11px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 10px rgba(0, 201, 122, 0.18)',
+                  flexShrink: 0
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
+                  <path d="M12 2.5 L20 5.5 V12.5 C20 17.5 16.5 20.8 12 22 C7.5 20.8 4 17.5 4 12.5 V5.5 Z" stroke="rgba(0,201,122,0.4)" strokeWidth="1.4" />
+                  <path d="M12 7 V16 M7.5 11.5 H16.5" stroke="#00c97a" strokeWidth="2.4" strokeLinecap="round" />
+                  <circle cx="12" cy="11.5" r="1.8" fill="#00e68a" />
+                </svg>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '21px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.3px' }}>
+                  Pharma
+                </span>
+                <span style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', fontSize: '24px', fontWeight: 700, color: '#00c97a', letterSpacing: '-0.2px', marginLeft: '1px' }}>
+                  Verify
+                </span>
+                <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '8.5px', fontWeight: 800, letterSpacing: '0.8px', color: '#00c97a', background: 'rgba(0,201,122,0.08)', border: '1px solid rgba(0,201,122,0.3)', borderRadius: '4px', padding: '2px 5px', marginLeft: '6px', lineHeight: 1 }}>
+                  NG
+                </span>
+              </div>
             </div>
           </div>
 
