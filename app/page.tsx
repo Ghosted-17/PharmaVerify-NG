@@ -109,6 +109,56 @@ export default function HomePage() {
   // Selected Article for In-App Reader Modal
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
+  // Legal Modal State (Stores the active legal document object)
+  const [activeLegalDoc, setActiveLegalDoc] = useState<{ title: string; tag: string; summary: string; content: string[] } | null>(null);
+
+  const legalContentMap: Record<string, { title: string; tag: string; summary: string; content: string[] }> = {
+    privacy: {
+      title: 'Privacy Policy',
+      tag: 'Legal · Data Protection',
+      summary: 'How PharmaVerify NG collects, utilizes, and safeguards your personal and health-related verification data.',
+      content: [
+        '1. Information We Collect: We collect information you explicitly provide when submitting medication details (such as drug names, NAFDAC registration numbers, batch numbers, and visual observations) or when contacting our team.',
+        '2. Use of Data: All verification data is processed through secure clinical and AI intelligence models strictly to evaluate NAFDAC Greenbook conformity, expiration status, and packaging integrity.',
+        '3. Data Security: We deploy robust encryption standards and secure cloud infrastructure (Firebase/Supabase) to ensure your health inquiries and logs remain confidential.',
+        '4. Third-Party Services: Verification prompts are processed securely via encrypted API endpoints. We never sell, rent, or trade your personal health data to third-party advertisers.'
+      ]
+    },
+    terms: {
+      title: 'Terms of Service',
+      tag: 'Legal · User Agreement',
+      summary: 'Rules, guidelines, and responsibilities governing your use of the PharmaVerify NG platform and APIs.',
+      content: [
+        '1. Acceptance of Terms: By accessing or utilizing PharmaVerify NG, you agree to be bound by these Terms of Service and all applicable local pharmaceutical regulations.',
+        '2. Educational Scope: PharmaVerify NG is designed as an auxiliary safety screening tool. Users agree not to rely solely on automated outputs for critical medical purchasing or emergency decisions.',
+        '3. Prohibited Conduct: Users must not attempt to scrape our verification databases, reverse-engineer our AI assessment prompts, or submit fraudulent counterfeit reports with malicious intent.',
+        '4. Service Modifications: We reserve the right to modify, suspend, or update platform features, API limits, or subscription tiers at any time with appropriate notification.'
+      ]
+    },
+    disclaimer: {
+      title: 'Legal Disclaimer',
+      tag: 'Legal · Medical Notice',
+      summary: 'Important limitations of liability regarding medical guidance and automated verification scores.',
+      content: [
+        '1. Not a Substitute for Professional Medical Advice: PharmaVerify NG provides informational and preliminary risk scores. It is not a certified laboratory testing facility nor an official arm of NAFDAC.',
+        '2. No Medical Diagnosis: The automated reports, safety scores, and AI summaries do not constitute formal medical diagnoses or prescriptions. Always consult a licensed pharmacist or physician.',
+        '3. Limitation of Liability: PharmaVerify NG, its founders, and affiliated institutions shall not be held liable for any direct, indirect, or consequential damages resulting from medication use.',
+        '4. Regulatory Status: Official confirmation of drug authenticity requires certified chemical and pharmacopeial laboratory assays.'
+      ]
+    },
+    cookies: {
+      title: 'Cookie Policy',
+      tag: 'Legal · Tracking & Storage',
+      summary: 'Information regarding local session storage, preferences, and cookie utilization on our platform.',
+      content: [
+        '1. What Are Cookies: Cookies are small data text files stored on your device when loading web pages to remember your preferences and improve performance.',
+        '2. Essential Storage: We utilize secure local storage flags to maintain your active UI theme (Dark Mode), navigation state, and authentication tokens when signed in.',
+        '3. Analytics: Minimal performance telemetry is maintained exclusively to monitor uptime, loading speeds, and network error frequencies.',
+        '4. Managing Cookies: You can disable cookies directly through your browser settings, though certain interactive features like user authentication may require cookies to function correctly.'
+      ]
+    }
+  };
+
   // Contact Form States
   const [contactName, setContactName] = useState('');
   const [contactOrg, setContactOrg] = useState('');
@@ -313,7 +363,8 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           --white:#ffffff;
         }
 
-        html{overflow-x:hidden}
+        /* Hide scrollbars across all browsers for modals and snap containers */
+        ::-webkit-scrollbar { display: none !important; }
         html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;overflow-x:hidden;cursor:default}
 
@@ -823,35 +874,22 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         .fade-in{animation:fadeUp 0.6s ease both}
 
-        /* ═══ MOBILE VERTICAL STACKING FOR DEVICES (NO HORIZONTAL CLIPPING) ═══ */
+        /* ═══ MOBILE HORIZONTAL SCROLL SNAP SYSTEM ═══ */
         .mobile-swipe-indicator {
           display: none;
         }
 
         @media (max-width: 600px) {
           .mobile-swipe-indicator {
-            display: none;
-          }
-
-          /* Stack devices vertically on mobile so both show fully */
-          .dual-devices-row {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            gap: 2.5rem !important;
-            margin: 2.5rem auto 1.5rem !important;
-            padding: 0 !important;
-          }
-
-          .stage-phone-perspective,
-          .stage-laptop-perspective {
-            width: 100% !important;
-            max-width: 310px !important;
-            flex: none !important;
-          }
-
-          .steps-connector-line {
-            display: none !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--jade);
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            font-weight: 600;
           }
 
           .mobile-scroll-snap {
@@ -879,6 +917,10 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             box-sizing: border-box !important;
           }
 
+          .steps-connector-line {
+            display: none !important;
+          }
+
           .steps-mobile-card {
             background: var(--card);
             border: 1px solid var(--line);
@@ -900,46 +942,11 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         }
         @media(max-width:600px){
           .services-grid,.features-grid,.pricing-grid,.team-grid,.resources-grid,.footer-top{grid-template-columns:1fr}
-
-          /* Sideways scrollable navbar on mobile */
-          nav {
-            padding: 0 0.85rem !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            gap: 12px !important;
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-            white-space: nowrap !important;
-            -webkit-overflow-scrolling: touch !important;
-            scrollbar-width: none !important;
-          }
-          nav::-webkit-scrollbar {
-            display: none !important;
-          }
-          .nav-logo-group {
-            display: inline-flex !important;
-            align-items: center !important;
-            flex-shrink: 0 !important;
-          }
-          .nav-right {
-            display: inline-flex !important;
-            align-items: center !important;
-            flex-shrink: 0 !important;
-            margin-left: auto !important;
-          }
-          .nav-right .btn-ghost {
-            display: none !important;
-          }
-          .nav-right .btn-primary {
-            white-space: nowrap !important;
-            padding: 8px 14px !important;
-            font-size: 12.5px !important;
-          }
-
-          .menu-toggle{display:flex; flex-shrink: 0}
+          nav{padding:0 1rem}
+          .menu-toggle{display:flex}
           .nav-tabs{display:${mobileNavOpen ? 'flex' : 'none'};position:absolute;top:68px;left:0;right:0;background:var(--card);border-bottom:1px solid var(--line);flex-direction:column;padding:0.5rem 0;z-index:499;box-shadow:0 20px 40px rgba(0,0,0,0.4)}
           .nav-tab{height:auto;padding:14px 1.5rem;border-bottom:1px solid var(--line);width:100%}
+          .nav-right .btn-ghost{display:none !important}
           .nav-mobile-actions{display:flex;flex-direction:column;gap:8px;padding:1rem 1.5rem;border-top:1px solid var(--line);margin-top:0.5rem}
           .nav-mobile-actions a{width:100%;text-align:center;text-decoration:none;padding:12px;border-radius:8px;font-family:'epilogue',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
           .topbar{flex-direction:column;align-items:center;gap:5px;padding:10px 1rem;text-align:center}
@@ -965,55 +972,53 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
 
         {/* NAV */}
         <nav>
-          <div className="nav-logo-group">
-            <button className="menu-toggle" style={{ marginRight: '8px' }} onClick={() => setMobileNavOpen(!mobileNavOpen)} title="Menu">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
+          <button className="menu-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)} title="Menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
 
+          <div
+            onClick={() => showPage('home')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '11px',
+              cursor: 'pointer',
+              userSelect: 'none',
+              textDecoration: 'none'
+            }}
+          >
             <div
-              onClick={() => showPage('home')}
               style={{
-                display: 'inline-flex',
+                width: '38px',
+                height: '38px',
+                background: 'linear-gradient(180deg, #14281d 0%, #0b1711 100%)',
+                border: '1.2px solid rgba(0, 201, 122, 0.55)',
+                borderRadius: '11px',
+                display: 'flex',
                 alignItems: 'center',
-                gap: '11px',
-                cursor: 'pointer',
-                userSelect: 'none',
-                textDecoration: 'none'
+                justifyContent: 'center',
+                boxShadow: '0 2px 10px rgba(0, 201, 122, 0.18)',
+                flexShrink: 0
               }}
             >
-              <div
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  background: 'linear-gradient(180deg, #14281d 0%, #0b1711 100%)',
-                  border: '1.2px solid rgba(0, 201, 122, 0.55)',
-                  borderRadius: '11px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 10px rgba(0, 201, 122, 0.18)',
-                  flexShrink: 0
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
-                  <path d="M12 2.5 L20 5.5 V12.5 C20 17.5 16.5 20.8 12 22 C7.5 20.8 4 17.5 4 12.5 V5.5 Z" stroke="rgba(0,201,122,0.4)" strokeWidth="1.4" />
-                  <path d="M12 7 V16 M7.5 11.5 H16.5" stroke="#00c97a" strokeWidth="2.4" strokeLinecap="round" />
-                  <circle cx="12" cy="11.5" r="1.8" fill="#00e68a" />
-                </svg>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
-                <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '21px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.3px' }}>
-                  Pharma
-                </span>
-                <span style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', fontSize: '24px', fontWeight: 700, color: '#00c97a', letterSpacing: '-0.2px', marginLeft: '1px' }}>
-                  Verify
-                </span>
-                <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '8.5px', fontWeight: 800, letterSpacing: '0.8px', color: '#00c97a', background: 'rgba(0,201,122,0.08)', border: '1px solid rgba(0,201,122,0.3)', borderRadius: '4px', padding: '2px 5px', marginLeft: '6px', lineHeight: 1 }}>
-                  NG
-                </span>
-              </div>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
+                <path d="M12 2.5 L20 5.5 V12.5 C20 17.5 16.5 20.8 12 22 C7.5 20.8 4 17.5 4 12.5 V5.5 Z" stroke="rgba(0,201,122,0.4)" strokeWidth="1.4" />
+                <path d="M12 7 V16 M7.5 11.5 H16.5" stroke="#00c97a" strokeWidth="2.4" strokeLinecap="round" />
+                <circle cx="12" cy="11.5" r="1.8" fill="#00e68a" />
+              </svg>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+              <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '21px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.3px' }}>
+                Pharma
+              </span>
+              <span style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', fontSize: '24px', fontWeight: 700, color: '#00c97a', letterSpacing: '-0.2px', marginLeft: '1px' }}>
+                Verify
+              </span>
+              <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '8.5px', fontWeight: 800, letterSpacing: '0.8px', color: '#00c97a', background: 'rgba(0,201,122,0.08)', border: '1px solid rgba(0,201,122,0.3)', borderRadius: '4px', padding: '2px 5px', marginLeft: '6px', lineHeight: 1 }}>
+                NG
+              </span>
             </div>
           </div>
 
@@ -1922,100 +1927,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         </section>
       </div>
 
-      {/* ════════════════════════ PAGE: CONTACT ════════════════════════ */}
-      <div className={`page ${activeTab === 'contact' ? 'active' : ''}`}>
-        <section>
-          <div className="contact-layout">
-            <div className="contact-info">
-              <div className="section-kicker">Get in Touch</div>
-              <h2>Let&apos;s talk about pharmaceutical safety</h2>
-              <p>Whether you&apos;re a community pharmacy, hospital team needing API integration, or a patient reporting a counterfeit — we&apos;re here to assist.</p>
-              <div className="contact-methods">
-                <div className="contact-method">
-                  <div className="cm-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
-                  </div>
-                  <div>
-                    <div className="cm-label">Official Email</div>
-                    <div className="cm-val">krizzyworld9@gmail.com</div>
-                  </div>
-                </div>
-                <div className="contact-method">
-                  <div className="cm-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.64A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.9a16 16 0 006.29 6.29l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>
-                  </div>
-                  <div>
-                    <div className="cm-label">Phone &amp; WhatsApp Support</div>
-                    <div className="cm-val">+234 812 321 7487</div>
-                  </div>
-                </div>
-                <div className="contact-method">
-                  <div className="cm-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                  </div>
-                  <div>
-                    <div className="cm-label">Office Location</div>
-                    <div className="cm-val">Lagos, Nigeria</div>
-                  </div>
-                </div>
-                <div className="contact-method">
-                  <div className="cm-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                  </div>
-                  <div>
-                    <div className="cm-label">Service Hours</div>
-                    <div className="cm-val">Mon–Fri, 8:00 AM – 6:00 PM WAT</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="contact-form">
-              <h3>Send Us a Message</h3>
-              <div className="form-grid">
-                <div className="field">
-                  <label>Full Name *</label>
-                  <input type="text" placeholder="e.g. Pharm. Adeyemi" value={contactName} onChange={(e) => setContactName(e.target.value)} />
-                </div>
-                <div className="field">
-                  <label>Organisation</label>
-                  <input type="text" placeholder="e.g. MedPlus Pharmacy" value={contactOrg} onChange={(e) => setContactOrg(e.target.value)} />
-                </div>
-                <div className="field full">
-                  <label>Email Address *</label>
-                  <input type="email" placeholder="you@example.com" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
-                </div>
-                <div className="field full">
-                  <label>Enquiry Type</label>
-                  <select value={contactType} onChange={(e) => setContactType(e.target.value)}>
-                    <option value="General enquiry">General enquiry</option>
-                    <option value="API / Enterprise plan">API / Enterprise plan</option>
-                    <option value="Report a counterfeit">Report a suspected counterfeit</option>
-                    <option value="Partnership">Partnership</option>
-                    <option value="Media">Media / Press</option>
-                  </select>
-                </div>
-                <div className="field full">
-                  <label>Message *</label>
-                  <textarea style={{ minHeight: 120 }} placeholder="How can our clinical team help you?" value={contactMsg} onChange={(e) => setContactMsg(e.target.value)}></textarea>
-                </div>
-              </div>
-
-              <button className="submit-btn" onClick={handleSendContact} disabled={contactSending}>
-                {contactSending ? 'Dispatching Message...' : 'Send Message →'}
-              </button>
-
-              {contactSuccess && (
-                <div style={{ color: '#00c97a', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
-                  ✓ Message received! Our team will respond within 24 hours.
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* FOOTER */}
+      {/* ════════════════════════ FOOTER ════════════════════════ */}
       <footer className="footer">
         <div className="footer-inner">
           <div className="footer-top">
@@ -2083,23 +1995,23 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               <ul>
                 <li><a href="#" onClick={(e) => { e.preventDefault(); showPage('about'); }}>About Us</a></li>
                 <li><a href="#" onClick={(e) => { e.preventDefault(); showPage('contact'); }}>Contact</a></li>
-                <li><a href="#">Press</a></li>
+                <li><a href="#" onClick={(e) => { e.preventDefault(); showPage('resources'); }}>Press</a></li>
               </ul>
             </div>
             <div className="footer-col">
               <h4>Legal</h4>
               <ul>
-                <li><a href="#">Privacy Policy</a></li>
-                <li><a href="#">Terms of Service</a></li>
-                <li><a href="#">Disclaimer</a></li>
-                <li><a href="#">Cookie Policy</a></li>
+                <li><a href="#" onClick={(e) => { e.preventDefault(); setActiveLegalDoc(legalContentMap.privacy); }}>Privacy Policy</a></li>
+                <li><a href="#" onClick={(e) => { e.preventDefault(); setActiveLegalDoc(legalContentMap.terms); }}>Terms of Service</a></li>
+                <li><a href="#" onClick={(e) => { e.preventDefault(); setActiveLegalDoc(legalContentMap.disclaimer); }}>Disclaimer</a></li>
+                <li><a href="#" onClick={(e) => { e.preventDefault(); setActiveLegalDoc(legalContentMap.cookies); }}>Cookie Policy</a></li>
               </ul>
             </div>
           </div>
           <div className="footer-bottom">
-            <div>© 2026 PharmaVerify<sup style={{ fontSize: '7px', verticalAlign: 'super' }}>NG</sup> Technologies Ltd. All rights reserved. RC 1234567 · Abuja, Nigeria.</div>
+            <div>© 2026 PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> Technologies Ltd. All rights reserved. RC 1234567 · Lagos, Nigeria.</div>
             <div style={{ display: 'flex', gap: '1.5rem' }}>
-              <a href="https://x.com/buayokunmi0">X</a>
+              <a href="https://x.com/buayokunmi0">Twitter / X</a>
               <a href="https://www.linkedin.com/in/emmanuel-bamigboye-a5b13a289/">LinkedIn</a>
               <a href="#">Instagram</a>
             </div>
@@ -2114,7 +2026,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           onClick={() => setSelectedArticle(null)}
         >
           <div
-            style={{ background: '#101c14', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, width: '100%', maxWidth: 680, maxHeight: '85vh', overflowY: 'auto', padding: '2rem', position: 'relative' }}
+            style={{ background: '#101c14', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, width: '100%', maxWidth: 680, maxHeight: '85vh', overflowY: 'auto', msOverflowStyle: 'none', scrollbarWidth: 'none', padding: '2rem', position: 'relative' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
@@ -2156,6 +2068,55 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                 style={{ background: '#00c97a', border: 'none', color: '#040a06', fontWeight: 700, borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 12.5 }}
               >
                 Done Reading
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* IN-APP LEGAL READER MODAL */}
+      {activeLegalDoc && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', backdropFilter: 'blur(5px)' }}
+          onClick={() => setActiveLegalDoc(null)}
+        >
+          <div
+            style={{ background: '#101c14', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, width: '100%', maxWidth: 680, maxHeight: '85vh', overflowY: 'auto', msOverflowStyle: 'none', scrollbarWidth: 'none', padding: '2rem', position: 'relative' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+              <div>
+                <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', color: '#00c97a', letterSpacing: 1.2 }}>
+                  {activeLegalDoc.tag}
+                </span>
+                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, color: '#fff', marginTop: 4, lineHeight: 1.3 }}>
+                  {activeLegalDoc.title}
+                </h2>
+              </div>
+              <button
+                onClick={() => setActiveLegalDoc(null)}
+                style={{ background: 'none', border: 'none', color: '#9ab0a0', fontSize: 20, cursor: 'pointer', padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: 14, color: '#9ab0a0', fontStyle: 'italic', marginBottom: '1.5rem', borderLeft: '3px solid #00c97a', paddingLeft: 10, lineHeight: 1.6 }}>
+              {activeLegalDoc.summary}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: 13.5, color: '#d0ddd4', lineHeight: 1.75 }}>
+              {activeLegalDoc.content.map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+
+            <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <button
+                onClick={() => setActiveLegalDoc(null)}
+                style={{ background: '#00c97a', border: 'none', color: '#040a06', fontWeight: 700, borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 12.5 }}
+              >
+                Close Document
               </button>
             </div>
           </div>
