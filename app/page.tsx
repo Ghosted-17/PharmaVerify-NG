@@ -383,8 +383,8 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         .page.active{display:block}
         @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-        /* ═══ HERO & SLIDESHOW ═══ */
-        .hero{position:relative;min-height:86vh;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:106px 2.5rem 0 2.5rem}
+        /* ═══ HERO & SLIDESHOW (ADDED TOP PADDING TO PREVENT OVERLAP) ═══ */
+        .hero{position:relative;min-height:86vh;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:140px 2.5rem 0 2.5rem}
         .hero-slides-wrapper{position:absolute;inset:0;pointer-events:none;z-index:0}
         .hero-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;filter:brightness(1.1) contrast(1.05);transition:opacity 1.6s ease-in-out, transform 8s ease-out;transform:scale(1.04)}
         .hero-slide.active{opacity:0.52;transform:scale(1)}
@@ -477,11 +477,25 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         }
         .step-node.active h4{color:var(--jade) !important}
 
+        /* Desktop Dual Device Row */
+        .dual-devices-row {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: center;
+          gap: 3rem;
+          margin: 3.5rem auto 2.5rem;
+          max-width: 1050px;
+          position: relative;
+          z-index: 2;
+        }
+
         /* 3D Phone Chassis on the Left */
         .stage-phone-perspective {
           perspective: 1200px;
           display: flex;
           justify-content: center;
+          flex-shrink: 0;
         }
 
         .stage-phone-wrapper {
@@ -560,6 +574,8 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           perspective: 1400px;
           display: flex;
           justify-content: center;
+          flex: 1 1 480px;
+          max-width: 520px;
         }
 
         .stage-laptop-wrapper {
@@ -575,6 +591,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           transition: transform 0.18s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.25s ease;
           cursor: pointer;
           will-change: transform;
+          width: 100%;
         }
 
         .stage-laptop-screen {
@@ -806,22 +823,35 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         .fade-in{animation:fadeUp 0.6s ease both}
 
-        /* ═══ MOBILE HORIZONTAL SCROLL SNAP SYSTEM ═══ */
+        /* ═══ MOBILE VERTICAL STACKING FOR DEVICES (NO HORIZONTAL CLIPPING) ═══ */
         .mobile-swipe-indicator {
           display: none;
         }
 
         @media (max-width: 600px) {
           .mobile-swipe-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            color: var(--jade);
-            letter-spacing: 0.5px;
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-            font-weight: 600;
+            display: none;
+          }
+
+          /* Stack devices vertically on mobile so both show fully */
+          .dual-devices-row {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 2.5rem !important;
+            margin: 2.5rem auto 1.5rem !important;
+            padding: 0 !important;
+          }
+
+          .stage-phone-perspective,
+          .stage-laptop-perspective {
+            width: 100% !important;
+            max-width: 310px !important;
+            flex: none !important;
+          }
+
+          .steps-connector-line {
+            display: none !important;
           }
 
           .mobile-scroll-snap {
@@ -849,43 +879,12 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             box-sizing: border-box !important;
           }
 
-          .steps-connector-line {
-            display: none !important;
-          }
-
           .steps-mobile-card {
             background: var(--card);
             border: 1px solid var(--line);
             border-radius: 18px;
             padding: 1.75rem 1.25rem;
             text-align: center;
-          }
-
-          /* Properly Proportioned Phone & Tablet for Sideways Swipe */
-          .stage-phone-perspective.mobile-snap-item {
-            flex: 0 0 82% !important;
-            max-width: 300px !important;
-            scroll-snap-align: center !important;
-          }
-          .stage-phone-perspective.mobile-snap-item .stage-phone-wrapper {
-            width: 290px !important;
-            padding: 10px !important;
-            border-radius: 34px !important;
-          }
-          .stage-phone-perspective.mobile-snap-item .stage-phone-inner {
-            min-height: 350px !important;
-            border-radius: 24px !important;
-          }
-          .stage-phone-perspective.mobile-snap-item .stage-phone-notch {
-            width: 85px !important;
-            height: 15px !important;
-            margin: 0 auto 10px !important;
-          }
-
-          .stage-laptop-perspective.mobile-snap-item {
-            flex: 0 0 84% !important;
-            max-width: 320px !important;
-            scroll-snap-align: center !important;
           }
         }
 
@@ -1185,7 +1184,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
               <div className="section-kicker">Multi-Device Clinical Verification</div>
               <h2 className="section-title" style={{ margin: '0 auto' }}>How Verification Works</h2>
-              <div className="mobile-swipe-indicator">Swipe steps or devices ↔</div>
+              <div className="mobile-swipe-indicator">Swipe steps ↔</div>
             </div>
 
             {/* 4 Interactive Steps with 6s Sync */}
@@ -1233,27 +1232,13 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               </div>
             </div>
 
-            {/* 1. SIDE-BY-SIDE DEVICES ROW: PHONE (LEFT) + TABLET (RIGHT) */}
-            <div 
-              className="mobile-scroll-snap"
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '3rem',
-                margin: '3.5rem auto 2.5rem',
-                maxWidth: '1050px',
-                position: 'relative',
-                zIndex: 2,
-              }}
-            >
+            {/* DUAL DEVICES ROW (STACKS VERTICALLY ON MOBILE SO PHONE IS FULLY VISIBLE) */}
+            <div className="dual-devices-row">
               {/* LEFT: 3D DANCING SMARTPHONE */}
               <div 
-                className="stage-phone-perspective mobile-snap-item"
+                className="stage-phone-perspective"
                 onMouseMove={(e) => handleDeviceMove(e, setPhoneTilt, 18)}
                 onMouseLeave={() => handleDeviceLeave(setPhoneTilt)}
-                style={{ flexShrink: 0 }}
               >
                 <div 
                   className={`stage-phone-wrapper ${!phoneTilt.active && !isSpinning ? 'floating' : ''} ${isSpinning ? 'spinning' : ''}`}
@@ -1357,10 +1342,9 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
 
               {/* RIGHT: WIDESCREEN TABLET / PC */}
               <div 
-                className="stage-laptop-perspective mobile-snap-item"
+                className="stage-laptop-perspective"
                 onMouseMove={(e) => handleDeviceMove(e, setLaptopTilt, 12)}
                 onMouseLeave={() => handleDeviceLeave(setLaptopTilt)}
-                style={{ flex: '1 1 480px', maxWidth: '520px' }}
               >
                 <div 
                   className="stage-laptop-wrapper"
@@ -1423,7 +1407,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               </div>
             </div>
 
-            {/* 2. CENTERED BUTTON ANCHORED UNDERNEATH BOTH DEVICES */}
+            {/* CENTERED BUTTON ANCHORED UNDERNEATH BOTH DEVICES */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginTop: '1.5rem', position: 'relative', zIndex: 2 }}>
               <button
                 className="btn-primary"
