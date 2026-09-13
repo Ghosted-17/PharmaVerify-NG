@@ -2097,9 +2097,9 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             </div>
           </div>
           <div className="footer-bottom">
-            <div>© 2026 PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> Technologies Ltd. All rights reserved. RC 1234567 · Lagos, Nigeria.</div>
+            <div>© 2026 PharmaVerify<sup style={{ fontSize: '7px', verticalAlign: 'super' }}>NG</sup> Technologies Ltd. All rights reserved. RC 1234567 · Abuja, Nigeria.</div>
             <div style={{ display: 'flex', gap: '1.5rem' }}>
-              <a href="https://x.com/buayokunmi0">Twitter / X</a>
+              <a href="https://x.com/buayokunmi0">X</a>
               <a href="https://www.linkedin.com/in/emmanuel-bamigboye-a5b13a289/">LinkedIn</a>
               <a href="#">Instagram</a>
             </div>
