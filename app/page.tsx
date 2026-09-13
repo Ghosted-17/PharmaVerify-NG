@@ -22,6 +22,71 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'home' | 'verify' | 'services' | 'about' | 'resources' | 'contact'>('home');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  // Background Hero Slideshow State
+  const [heroSlide, setHeroSlide] = useState(0);
+  useEffect(() => {
+    const slideTimer = setInterval(() => {
+      setHeroSlide((prev) => (prev + 1) % 4);
+    }, 6000);
+    return () => clearInterval(slideTimer);
+  }, []);
+
+  // Synchronized Process Step State (6-second auto-cycle with 3D spin trigger)
+  const [activeStep, setActiveStep] = useState(1);
+  const [isSpinning, setIsSpinning] = useState(false);
+
+  // Dynamic 3D Pressure Tilt States
+  const [phoneTilt, setPhoneTilt] = useState({ x: 0, y: 0, active: false });
+  const [laptopTilt, setLaptopTilt] = useState({ x: 0, y: 0, active: false });
+
+  const handleDeviceMove = (
+    e: React.MouseEvent<HTMLDivElement>,
+    setter: React.Dispatch<React.SetStateAction<{ x: number; y: number; active: boolean }>>,
+    maxDeg = 16
+  ) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const xPct = (x / rect.width - 0.5) * 2;
+    const yPct = (y / rect.height - 0.5) * 2;
+
+    setter({
+      x: -yPct * maxDeg,
+      y: xPct * maxDeg,
+      active: true,
+    });
+  };
+
+  const handleDeviceLeave = (
+    setter: React.Dispatch<React.SetStateAction<{ x: number; y: number; active: boolean }>>
+  ) => {
+    setter({ x: 0, y: 0, active: false });
+  };
+
+  const triggerStepChange = (newStep: number) => {
+    if (newStep === activeStep) return;
+    setIsSpinning(true);
+    setTimeout(() => {
+      setActiveStep(newStep);
+    }, 380);
+    setTimeout(() => {
+      setIsSpinning(false);
+    }, 850);
+  };
+
+  useEffect(() => {
+    const stepTimer = setInterval(() => {
+      setActiveStep((prev) => {
+        const next = prev === 4 ? 1 : prev + 1;
+        setIsSpinning(true);
+        setTimeout(() => setIsSpinning(false), 850);
+        return next;
+      });
+    }, 6000);
+    return () => clearInterval(stepTimer);
+  }, []);
+
   // Verification Form State
   const [drugName, setDrugName] = useState('');
   const [manufacturer, setManufacturer] = useState('');
@@ -41,10 +106,10 @@ export default function HomePage() {
   const [verifiedDrug, setVerifiedDrug] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Selected Article for In-App Reader Modal (Option A + B)
+  // Selected Article for In-App Reader Modal
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
-  // Contact Form States (Resend + Supabase)
+  // Contact Form States
   const [contactName, setContactName] = useState('');
   const [contactOrg, setContactOrg] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -74,7 +139,7 @@ export default function HomePage() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Check URL query on load (e.g. /?tab=resources) so Back button stays on the tab
+  // Check URL query on load
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -172,7 +237,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
     }
   };
 
- const handleSendContact = async () => {
+  const handleSendContact = async () => {
     if (!contactName.trim() || !contactEmail.trim() || !contactMsg.trim()) {
       alert('Please fill out your name, email, and message.');
       return;
@@ -212,7 +277,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
       setContactSending(false);
     }
   };
- 
+
   const statusMap = {
     SAFE: { chip: 'chip-safe', dot: 'dot-safe', label: 'Safe to use', bar: '#00c97a', cls: 'rt-safe' },
     CAUTION: { chip: 'chip-caution', dot: 'dot-caution', label: 'Use with caution', bar: '#f59e0b', cls: 'rt-caution' },
@@ -225,14 +290,14 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
       <style>{`
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         :root{
-          --void:#040a06;
-          --deep:#080f0a;
-          --surface:#0c1510;
-          --card:#101c14;
-          --card2:#141f18;
+          --void:#08100c;
+          --deep:#0b1711;
+          --surface:#0f1f17;
+          --card:#13241b;
+          --card2:#172a20;
           --glass:rgba(255,255,255,0.03);
           --glass2:rgba(255,255,255,0.06);
-          --line:rgba(255,255,255,0.07);
+          --line:rgba(0,201,122,0.09);
           --line2:rgba(255,255,255,0.12);
           --jade:#00c97a;
           --jade-dim:#00a362;
@@ -244,12 +309,12 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           --blood-glow:rgba(239,68,68,0.15);
           --text:#e8f0ea;
           --text2:#9ab0a0;
-          --text3:#5a7060;
+          --text3:#607968;
           --white:#ffffff;
         }
 
         html{overflow-x:hidden}
-html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
+        html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;overflow-x:hidden;cursor:default}
 
         /* ═══ CURSOR ═══ */
@@ -262,18 +327,43 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         /* ═══ NOISE OVERLAY ═══ */
         body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9997;opacity:0.4}
 
+        /* ═══ HEADER CONTAINER (PERMANENTLY PINNED TO TOP) ═══ */
+        .header-fixed-wrap{
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          width: 100% !important;
+          z-index: 900 !important;
+        }
+
         /* ═══ TOPBAR ═══ */
-        .topbar{background:rgba(4,10,6,0.95);border-bottom:1px solid var(--line);padding:8px 2rem;display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--text3)}
-        .topbar-left{display:flex;align-items:center;gap:1.5rem}
-        .topbar-badge{display:flex;align-items:center;gap:5px;color:var(--jade)}
-        .topbar-badge::before{content:'';width:6px;height:6px;background:var(--jade);border-radius:50%;animation:pulse-dot 2s ease infinite}
-        @keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(0,201,122,0.4)}50%{box-shadow:0 0 0 5px transparent}}
+        .topbar{
+          background: rgba(8, 16, 12, 0.98);
+          border-bottom: 1px solid var(--line);
+          padding: 8px 2.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 11.5px;
+          color: var(--text3);
+          width: 100%;
+        }
+        .topbar-left{display: flex; align-items: center; gap: 12px}
 
         /* ═══ NAV ═══ */
-        nav{position:sticky;top:0;z-index:500;background:rgba(4,10,6,0.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:0 2.5rem;height:68px;display:flex;align-items:center;justify-content:space-between}
-        .nav-logo{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--white);letter-spacing:-0.5px;display:flex;align-items:center;gap:10px;text-decoration:none}
-        .nav-logo .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--jade),var(--jade-dim));border-radius:8px;display:flex;align-items:center;justify-content:center}
-        .nav-logo .logo-icon svg{width:18px;height:18px}
+        nav{
+          background: rgba(8, 16, 12, 0.88);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-bottom: 1px solid var(--line);
+          padding: 0 2.5rem;
+          height: 68px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+        }
         .nav-tabs{display:flex;align-items:center;gap:0}
         .nav-tab{padding:0 18px;height:68px;display:flex;align-items:center;font-size:13.5px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;letter-spacing:0.1px;position:relative}
         .nav-tab:hover{color:var(--text)}
@@ -292,21 +382,18 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         .page.active{display:block}
         @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-        /* ═══ HERO ═══ */
-        .hero{position:relative;min-height:92vh;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:0 2.5rem}
-        .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(0,201,122,0.06) 0%,transparent 70%);pointer-events:none}
-        .hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at center,black 20%,transparent 80%);pointer-events:none;opacity:0.5}
+        /* ═══ HERO & SLIDESHOW ═══ */
+        .hero{position:relative;min-height:86vh;display:flex;flex-direction:column;justify-content:center;overflow:hidden;padding:106px 2.5rem 0 2.5rem}
+        .hero-slides-wrapper{position:absolute;inset:0;pointer-events:none;z-index:0}
+        .hero-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;filter:brightness(1.1) contrast(1.05);transition:opacity 1.6s ease-in-out, transform 8s ease-out;transform:scale(1.04)}
+        .hero-slide.active{opacity:0.52;transform:scale(1)}
+        .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 85% 75% at 50% 50%,rgba(8,16,12,0.38) 0%,rgba(8,16,12,0.85) 100%);pointer-events:none;z-index:1}
+        .hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at center,black 20%,transparent 80%);pointer-events:none;opacity:0.25;z-index:1}
+        .hero h1{font-family:'Fraunces',serif;font-size:clamp(3rem,7vw,5.5rem);font-weight:700;line-height:1.03;letter-spacing:-2px;margin-bottom:1.5rem;text-shadow:0 4px 24px rgba(0,0,0,0.75);animation:fadeUp 0.6s 0.2s both}
+        .hero h1 em{font-style:italic;color:var(--jade)}
+        .hero-sub{font-size:17px;line-height:1.75;color:var(--text2);font-weight:300;max-width:540px;margin:0 auto 2.5rem;text-shadow:0 2px 14px rgba(0,0,0,0.8);animation:fadeUp 0.6s 0.3s both}
         .hero-content{position:relative;z-index:2;max-width:760px;margin:0 auto;text-align:center;padding:2rem 0}
         .hero-kicker{display:inline-flex;align-items:center;gap:8px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.2);color:var(--jade);font-size:11.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:6px 16px;border-radius:20px;margin-bottom:2rem;animation:fadeUp 0.6s 0.1s both}
-        .hero h1{font-family:'Fraunces',serif;font-size:clamp(3rem,7vw,5.5rem);font-weight:700;line-height:1.03;letter-spacing:-2px;margin-bottom:1.5rem;animation:fadeUp 0.6s 0.2s both}
-        .hero h1 em{font-style:italic;color:var(--jade)}
-        .hero-sub{font-size:17px;line-height:1.75;color:var(--text2);font-weight:300;max-width:540px;margin:0 auto 2.5rem;animation:fadeUp 0.6s 0.3s both}
-        .hero-actions{display:flex;align-items:center;justify-content:center;gap:12px;animation:fadeUp 0.6s 0.4s both}
-        .hero-btn{padding:14px 32px;border-radius:10px;font-family:'Epilogue',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.1px;border:none}
-        .hero-btn.jade{background:var(--jade);color:var(--void)}
-        .hero-btn.jade:hover{background:#00e68a;box-shadow:0 12px 36px rgba(0,201,122,0.35);transform:translateY(-2px)}
-        .hero-btn.outline{background:transparent;border:1px solid var(--line2);color:var(--text)}
-        .hero-btn.outline:hover{border-color:var(--jade);color:var(--jade)}
         .hero-scroll{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--text3);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;animation:fadeUp 0.6s 0.6s both}
         .hero-scroll-line{width:1px;height:48px;background:linear-gradient(to bottom,var(--jade),transparent);animation:scrollLine 1.5s ease infinite}
         @keyframes scrollLine{0%,100%{opacity:0.3;transform:scaleY(1)}50%{opacity:1}}
@@ -324,6 +411,203 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         .section-kicker{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--jade);margin-bottom:0.75rem}
         .section-title{font-family:'Fraunces',serif;font-size:clamp(2rem,4vw,3rem);font-weight:700;color:var(--white);letter-spacing:-1px;line-height:1.15;margin-bottom:1rem}
         .section-sub{font-size:16px;color:var(--text2);font-weight:300;line-height:1.7;max-width:500px}
+
+        /* ═══ PROCESS INTERACTIVE STAGE & DUAL-DEVICE 3D DISPLAY ═══ */
+        .process-stage-section {
+          position: relative;
+          overflow: hidden;
+          background: var(--surface);
+          padding: 6rem 2.5rem;
+        }
+
+        .process-backdrop-slides {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .process-bg-slide {
+          position: absolute;
+          inset: -40px;
+          background-size: cover;
+          background-position: center;
+          filter: blur(28px) brightness(0.28) saturate(1.2);
+          opacity: 0;
+          transition: opacity 1.8s ease-in-out;
+        }
+
+        .process-bg-slide.active {
+          opacity: 1;
+        }
+
+        .process-vignette {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(8,16,12,0.6) 0%, rgba(8,16,12,0.96) 100%);
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .step-node{cursor:pointer;transition:all 0.3s ease;user-select:none}
+        .step-circle{
+          width:56px;
+          height:56px;
+          border-radius:50%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          margin:0 auto 1.25rem;
+          font-family:'Fraunces',serif;
+          font-size:20px;
+          font-weight:700;
+          transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .step-node.active .step-circle{
+          background:var(--jade) !important;
+          color:var(--void) !important;
+          box-shadow:0 0 24px rgba(0,201,122,0.45);
+          transform:scale(1.12);
+        }
+        .step-node:not(.active) .step-circle{
+          background:var(--card);
+          border:2px solid rgba(0,201,122,0.25);
+          color:var(--text3);
+        }
+        .step-node.active h4{color:var(--jade) !important}
+
+        /* 3D Phone Chassis on the Left */
+        .stage-phone-perspective {
+          perspective: 1200px;
+          display: flex;
+          justify-content: center;
+        }
+
+        .stage-phone-wrapper {
+          position: relative;
+          width: 290px;
+          padding: 10px;
+          background: linear-gradient(145deg, #1a2f22 0%, #0d1812 50%, #080f0b 100%);
+          border: 1.5px solid rgba(0, 201, 122, 0.45);
+          border-radius: 36px;
+          transform-style: preserve-3d;
+          box-shadow: 
+            0 30px 60px rgba(0, 0, 0, 0.8),
+            0 0 35px rgba(0, 201, 122, 0.18),
+            inset 0 1px 2px rgba(255, 255, 255, 0.2);
+          transition: transform 0.18s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.25s ease;
+          cursor: grab;
+          will-change: transform;
+        }
+
+        .stage-phone-wrapper.floating {
+          animation: phoneIdleFloat 6s ease-in-out infinite alternate;
+        }
+
+        .stage-phone-wrapper.spinning {
+          animation: phoneSpinStep 0.85s cubic-bezier(0.2, 0.85, 0.35, 1.2) forwards !important;
+        }
+
+        @keyframes phoneIdleFloat {
+          0% { transform: rotateY(-8deg) rotateX(5deg) translateY(0px); }
+          100% { transform: rotateY(6deg) rotateX(-3deg) translateY(-8px); }
+        }
+
+        @keyframes phoneSpinStep {
+          0% { transform: rotateY(0deg) scale(0.96); }
+          50% { transform: rotateY(180deg) scale(1.05); }
+          100% { transform: rotateY(360deg) scale(1); }
+        }
+
+        .stage-phone-wrapper::before{
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 60%;
+          border-top-left-radius: 34px;
+          border-top-right-radius: 34px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
+          pointer-events: none;
+          z-index: 5;
+        }
+
+        .stage-phone-inner {
+          background: #060d09;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 26px;
+          overflow: hidden;
+          min-height: 360px;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          backface-visibility: hidden;
+        }
+
+        .stage-phone-notch {
+          width: 90px;
+          height: 16px;
+          background: #0c1510;
+          border-bottom-left-radius: 10px;
+          border-bottom-right-radius: 10px;
+          margin: 0 auto 12px;
+        }
+
+        /* Laptop / Tablet Perspective & Pressure Tilt */
+        .stage-laptop-perspective {
+          perspective: 1400px;
+          display: flex;
+          justify-content: center;
+        }
+
+        .stage-laptop-wrapper {
+          position: relative;
+          background: #0d1812;
+          border: 1.5px solid rgba(0, 201, 122, 0.35);
+          border-radius: 18px;
+          padding: 8px 8px 12px;
+          transform-style: preserve-3d;
+          box-shadow: 
+            0 25px 50px rgba(0,0,0,0.7),
+            0 0 30px rgba(0, 201, 122, 0.12);
+          transition: transform 0.18s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.25s ease;
+          cursor: pointer;
+          will-change: transform;
+        }
+
+        .stage-laptop-screen {
+          background: #060d09;
+          border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.08);
+          overflow: hidden;
+          min-height: 290px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .laptop-topbar {
+          background: #0d1812;
+          padding: 6px 12px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .laptop-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+        }
+
+        .screen-fade {
+          flex: 1;
+          padding: 0 1.25rem 1.25rem;
+          display: flex;
+          flex-direction: column;
+          animation: fadeUp 0.45s ease both;
+        }
 
         /* ═══ VERIFY PAGE ═══ */
         .verify-layout{display:grid;grid-template-columns:1fr 400px;gap:2rem;max-width:1100px;margin:0 auto}
@@ -508,7 +792,6 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         .footer{background:var(--void);border-top:1px solid var(--line);padding:4rem 2.5rem 2rem}
         .footer-inner{max-width:1100px;margin:0 auto}
         .footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;padding-bottom:3rem;border-bottom:1px solid var(--line);margin-bottom:2rem}
-        .footer-brand .logo{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--white);margin-bottom:0.75rem;display:flex;align-items:center;gap:8px}
         .footer-brand p{font-size:13px;color:var(--text3);line-height:1.7;max-width:280px}
         .footer-col h4{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:1rem}
         .footer-col ul{list-style:none;display:flex;flex-direction:column;gap:8px}
@@ -540,7 +823,6 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
             font-weight: 600;
           }
 
-          /* Container that holds sideways cards */
           .mobile-scroll-snap {
             display: flex !important;
             flex-direction: row !important;
@@ -552,22 +834,20 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
             padding: 0.5rem 1.25rem 1.5rem 1.25rem !important;
             margin-left: -1.25rem !important;
             margin-right: -1.25rem !important;
-            scrollbar-width: none; /* Firefox */
+            scrollbar-width: none;
           }
           .mobile-scroll-snap::-webkit-scrollbar {
-            display: none; /* Chrome, Safari */
+            display: none;
           }
 
-          /* Individual card snapping */
           .mobile-snap-item {
-            flex: 0 0 80% !important; /* 80% lets the adjacent card peek through to invite swiping */
-            max-width: 80% !important;
+            flex: 0 0 82% !important;
+            max-width: 82% !important;
             scroll-snap-align: center !important;
             scroll-snap-stop: normal !important;
             box-sizing: border-box !important;
           }
 
-          /* Steps horizontal connector line hide */
           .steps-connector-line {
             display: none !important;
           }
@@ -578,6 +858,30 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
             border-radius: 18px;
             padding: 1.75rem 1.25rem;
             text-align: center;
+          }
+
+          /* Scaled-down phone for mobile */
+          .stage-phone-perspective.mobile-snap-item {
+            flex: 0 0 240px !important;
+            max-width: 240px !important;
+          }
+          .stage-phone-perspective.mobile-snap-item .stage-phone-wrapper {
+            width: 235px !important;
+            padding: 8px !important;
+            border-radius: 28px !important;
+          }
+          .stage-phone-perspective.mobile-snap-item .stage-phone-inner {
+            min-height: 300px !important;
+            border-radius: 22px !important;
+          }
+          .stage-phone-perspective.mobile-snap-item .stage-phone-notch {
+            width: 70px !important;
+            height: 12px !important;
+            margin: 0 auto 8px !important;
+          }
+          .stage-laptop-perspective.mobile-snap-item {
+            flex: 0 0 300px !important;
+            max-width: 300px !important;
           }
         }
 
@@ -597,11 +901,9 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
           .menu-toggle{display:flex}
           .nav-tabs{display:${mobileNavOpen ? 'flex' : 'none'};position:absolute;top:68px;left:0;right:0;background:var(--card);border-bottom:1px solid var(--line);flex-direction:column;padding:0.5rem 0;z-index:499;box-shadow:0 20px 40px rgba(0,0,0,0.4)}
           .nav-tab{height:auto;padding:14px 1.5rem;border-bottom:1px solid var(--line);width:100%}
-          .nav-right .btn-ghost,.nav-right .nav-verify-btn,.nav-right .nav-signin-btn{display:none !important}
-          .nav-logo{font-size:17px}
-          .nav-logo sup{display:none}
+          .nav-right .btn-ghost{display:none !important}
           .nav-mobile-actions{display:flex;flex-direction:column;gap:8px;padding:1rem 1.5rem;border-top:1px solid var(--line);margin-top:0.5rem}
-          .nav-mobile-actions a,.nav-mobile-actions button{width:100%;text-align:center;text-decoration:none;padding:12px;border-radius:8px;font-family:'epilogue',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+          .nav-mobile-actions a{width:100%;text-align:center;text-decoration:none;padding:12px;border-radius:8px;font-family:'epilogue',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
           .topbar{flex-direction:column;align-items:center;gap:5px;padding:10px 1rem;text-align:center}
           .topbar-left{flex-direction:column;gap:4px;align-items:center}
         }
@@ -611,77 +913,135 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
       <div className="cursor" style={{ left: cursorPos.x, top: cursorPos.y }} />
       <div className="cursor-ring" style={{ left: ringPos.x, top: ringPos.y }} />
 
-      {/* TOPBAR */}
-      <div className="topbar">
-        <div className="topbar-left">
-          <div className="topbar-badge">System Operational</div>
-          <span>24/7 Pharmaceutical Verification Services</span>
+      {/* FIXED HEADER WRAPPER */}
+      <div className="header-fixed-wrap">
+        {/* TOPBAR */}
+        <div className="topbar">
+          <div className="topbar-left">
+            <span style={{ color: 'var(--jade)', fontWeight: 600 }}>National Drug Safety Initiative</span>
+            <span style={{ opacity: 0.35 }}>|</span>
+            <span>Aligned with NAFDAC Greenbook Guidelines</span>
+          </div>
+          <div>Verified Dispensary Standards · PSN Aligned</div>
         </div>
-        <div>Nigeria · NAFDAC Aligned · WHO Compliant</div>
-      </div>
 
-      {/* NAV */}
-      <nav>
-        <button className="menu-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)} title="Menu">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
-
-        <a href="#" className="nav-logo" onClick={(e) => { e.preventDefault(); showPage('home'); }}>
-          <div className="logo-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#040a06" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+        {/* NAV */}
+        <nav>
+          <button className="menu-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)} title="Menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
             </svg>
+          </button>
+
+          <div
+            onClick={() => showPage('home')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '11px',
+              cursor: 'pointer',
+              userSelect: 'none',
+              textDecoration: 'none'
+            }}
+          >
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                background: 'linear-gradient(180deg, #14281d 0%, #0b1711 100%)',
+                border: '1.2px solid rgba(0, 201, 122, 0.55)',
+                borderRadius: '11px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 10px rgba(0, 201, 122, 0.18)',
+                flexShrink: 0
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
+                <path d="M12 2.5 L20 5.5 V12.5 C20 17.5 16.5 20.8 12 22 C7.5 20.8 4 17.5 4 12.5 V5.5 Z" stroke="rgba(0,201,122,0.4)" strokeWidth="1.4" />
+                <path d="M12 7 V16 M7.5 11.5 H16.5" stroke="#00c97a" strokeWidth="2.4" strokeLinecap="round" />
+                <circle cx="12" cy="11.5" r="1.8" fill="#00e68a" />
+              </svg>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+              <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '21px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.3px' }}>
+                Pharma
+              </span>
+              <span style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', fontSize: '24px', fontWeight: 700, color: '#00c97a', letterSpacing: '-0.2px', marginLeft: '1px' }}>
+                Verify
+              </span>
+              <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '8.5px', fontWeight: 800, letterSpacing: '0.8px', color: '#00c97a', background: 'rgba(0,201,122,0.08)', border: '1px solid rgba(0,201,122,0.3)', borderRadius: '4px', padding: '2px 5px', marginLeft: '6px', lineHeight: 1 }}>
+                NG
+              </span>
+            </div>
           </div>
-          PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup>
-        </a>
 
-        <div className={`nav-tabs ${mobileNavOpen ? 'mobile-open' : ''}`}>
-          <div className={`nav-tab ${activeTab === 'home' ? 'active' : ''}`} onClick={() => showPage('home')}>Home</div>
-          <div className={`nav-tab ${activeTab === 'verify' ? 'active' : ''}`} onClick={() => showPage('verify')}>Verify Drug</div>
-          <div className={`nav-tab ${activeTab === 'services' ? 'active' : ''}`} onClick={() => showPage('services')}>Services</div>
-          <div className={`nav-tab ${activeTab === 'about' ? 'active' : ''}`} onClick={() => showPage('about')}>About Us</div>
-          <div className={`nav-tab ${activeTab === 'resources' ? 'active' : ''}`} onClick={() => showPage('resources')}>Resources</div>
-          <div className={`nav-tab ${activeTab === 'contact' ? 'active' : ''}`} onClick={() => showPage('contact')}>Contact</div>
+          <div className={`nav-tabs ${mobileNavOpen ? 'mobile-open' : ''}`}>
+            <div className={`nav-tab ${activeTab === 'home' ? 'active' : ''}`} onClick={() => showPage('home')}>Home</div>
+            <div className={`nav-tab ${activeTab === 'about' ? 'active' : ''}`} onClick={() => showPage('about')}>About Us</div>
+            <div className={`nav-tab ${activeTab === 'resources' ? 'active' : ''}`} onClick={() => showPage('resources')}>Resources</div>
+            <div className={`nav-tab ${activeTab === 'contact' ? 'active' : ''}`} onClick={() => showPage('contact')}>Contact</div>
 
-          <div className="nav-mobile-actions">
-            <Link href="/signup" style={{ border: '1px solid var(--line2)', color: 'var(--text2)', background: 'transparent' }}>Sign Up</Link>
-            <Link href="/signin" style={{ border: '1px solid var(--jade)', color: 'var(--jade)', background: 'transparent' }}>Sign In</Link>
-            <button onClick={() => showPage('verify')} style={{ border: 'none', background: 'var(--jade)', color: 'var(--void)' }}>Verify Now →</button>
+            <div className="nav-mobile-actions">
+              <Link href="/signup" style={{ border: '1px solid var(--line2)', color: 'var(--text2)', background: 'transparent' }}>Sign Up</Link>
+              <Link href="/signin" style={{ border: '1px solid var(--jade)', color: 'var(--jade)', background: 'transparent' }}>Sign In</Link>
+            </div>
           </div>
-        </div>
 
-        <div className="nav-right">
-          <Link href="/signup" className="btn-ghost" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>Sign Up</Link>
-          <Link href="/signin" className="btn-primary nav-signin-btn" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" /></svg>
-            Sign In
-          </Link>
-          <button className="btn-primary nav-verify-btn" onClick={() => showPage('verify')}>Verify Now →</button>
-        </div>
-      </nav>
+          <div className="nav-right">
+            <Link href="/signup" className="btn-ghost" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>Sign Up</Link>
+            <Link href="/signin" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" /></svg>
+              Sign In
+            </Link>
+          </div>
+        </nav>
+      </div>
 
       {/* ════════════════════════ PAGE: HOME ════════════════════════ */}
       <div className={`page ${activeTab === 'home' ? 'active' : ''}`}>
         <div className="hero">
+          {/* 4-Scene Pharmaceutical Background Slideshow */}
+          <div className="hero-slides-wrapper">
+            <div
+              className={`hero-slide ${heroSlide === 0 ? 'active' : ''}`}
+              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1586015555751-63c20994301a?q=80&w=1600&auto=format&fit=crop')` }}
+            />
+            <div
+              className={`hero-slide ${heroSlide === 1 ? 'active' : ''}`}
+              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=1600&auto=format&fit=crop')` }}
+            />
+            <div
+              className={`hero-slide ${heroSlide === 2 ? 'active' : ''}`}
+              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1471864190281-a93a3070b6de?q=80&w=1600&auto=format&fit=crop')` }}
+            />
+            <div
+              className={`hero-slide ${heroSlide === 3 ? 'active' : ''}`}
+              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1579165466741-7f35e4755660?q=80&w=1600&auto=format&fit=crop')` }}
+            />
+          </div>
+
           <div className="hero-bg"></div>
           <div className="hero-grid"></div>
+
           <div className="hero-content">
             <div className="hero-kicker">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
               Pharmaceutical Safety Authority
             </div>
             <h1>Drug Verification<br />You Can <em>Trust</em></h1>
-            <p className="hero-sub">PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> cross-checks medication details, NAFDAC registration alignment, and storage conditions with AI-powered clinical intelligence.</p>
-            <div className="hero-actions">
-              <button className="hero-btn jade" onClick={() => showPage('verify')}>Start Verification →</button>
-              <button className="hero-btn outline" onClick={() => showPage('services')}>Our Services</button>
-            </div>
+            <p className="hero-sub" style={{ marginBottom: 0 }}>
+              PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> cross-checks medication details, NAFDAC registration alignment, and storage conditions with clinical intelligence.
+            </p>
           </div>
-          <div className="hero-scroll">
+
+          <div className="hero-scroll" style={{ cursor: 'pointer' }} onClick={() => {
+            const el = document.querySelector('.stats-bar');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}>
             <div className="hero-scroll-line"></div>
-            Scroll
+            Explore
           </div>
         </div>
 
@@ -756,45 +1116,290 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
           </div>
         </section>
 
-        {/* PROCESS */}
-        <section style={{ background: 'var(--surface)' }}>
-          <div className="section-inner">
+        {/* ═══ PROCESS WITH BLURRED ROTATING BACKDROP & DUAL-DEVICE 3D SHOWCASE ═══ */}
+        <section className="process-stage-section">
+          {/* Blurred Rotating Pharmaceutical Backdrop */}
+          <div className="process-backdrop-slides">
+            <div
+              className={`process-bg-slide ${activeStep === 1 ? 'active' : ''}`}
+              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1586015555751-63c20994301a?q=80&w=1600&auto=format&fit=crop')` }}
+            />
+            <div
+              className={`process-bg-slide ${activeStep === 2 ? 'active' : ''}`}
+              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=1600&auto=format&fit=crop')` }}
+            />
+            <div
+              className={`process-bg-slide ${activeStep === 3 ? 'active' : ''}`}
+              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1471864190281-a93a3070b6de?q=80&w=1600&auto=format&fit=crop')` }}
+            />
+            <div
+              className={`process-bg-slide ${activeStep === 4 ? 'active' : ''}`}
+              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1579165466741-7f35e4755660?q=80&w=1600&auto=format&fit=crop')` }}
+            />
+          </div>
+
+          <div className="process-vignette" />
+
+          <div className="section-inner" style={{ position: 'relative', zIndex: 2 }}>
             <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-              <div className="section-kicker">Process</div>
+              <div className="section-kicker">Multi-Device Clinical Verification</div>
               <h2 className="section-title" style={{ margin: '0 auto' }}>How Verification Works</h2>
-              <div className="mobile-swipe-indicator">Swipe horizontally ↔</div>
+              <div className="mobile-swipe-indicator">Swipe steps or devices ↔</div>
             </div>
 
+            {/* 4 Interactive Steps with 6s Sync */}
             <div className="mobile-scroll-snap" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, position: 'relative' }}>
               <div className="steps-connector-line" style={{ position: 'absolute', top: 28, left: '12.5%', right: '12.5%', height: 1, background: 'linear-gradient(90deg,var(--jade),rgba(0,201,122,0.2))', zIndex: 0 }}></div>
 
-              <div className="mobile-snap-item steps-mobile-card" style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 56, height: 56, background: 'var(--jade)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'Fraunces', fontSize: 20, fontWeight: 700, color: 'var(--void)' }}>1</div>
+              <div
+                className={`mobile-snap-item steps-mobile-card step-node ${activeStep === 1 ? 'active' : ''}`}
+                onClick={() => triggerStepChange(1)}
+                style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}
+              >
+                <div className="step-circle">1</div>
                 <h4 style={{ fontFamily: 'Fraunces', fontSize: 16, fontWeight: 700, color: 'var(--white)', marginBottom: '0.5rem' }}>Enter Details</h4>
-                <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Input the drug name, manufacturer, expiry, and NAFDAC registration number.</p>
+                <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Input the drug name, manufacturer, expiry, and NAFDAC number.</p>
               </div>
 
-              <div className="mobile-snap-item steps-mobile-card" style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 56, height: 56, background: 'var(--card)', border: '2px solid var(--jade-dim)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'Fraunces', fontSize: 20, fontWeight: 700, color: 'var(--jade)' }}>2</div>
+              <div
+                className={`mobile-snap-item steps-mobile-card step-node ${activeStep === 2 ? 'active' : ''}`}
+                onClick={() => triggerStepChange(2)}
+                style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}
+              >
+                <div className="step-circle">2</div>
                 <h4 style={{ fontFamily: 'Fraunces', fontSize: 16, fontWeight: 700, color: 'var(--white)', marginBottom: '0.5rem' }}>Describe Condition</h4>
-                <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Describe visual changes and check any warning signs you observe.</p>
+                <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Check observed packaging, seals, and visual discoloration.</p>
               </div>
 
-              <div className="mobile-snap-item steps-mobile-card" style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 56, height: 56, background: 'var(--card)', border: '2px solid var(--jade-dim)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'Fraunces', fontSize: 20, fontWeight: 700, color: 'var(--jade)' }}>3</div>
+              <div
+                className={`mobile-snap-item steps-mobile-card step-node ${activeStep === 3 ? 'active' : ''}`}
+                onClick={() => triggerStepChange(3)}
+                style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}
+              >
+                <div className="step-circle">3</div>
                 <h4 style={{ fontFamily: 'Fraunces', fontSize: 16, fontWeight: 700, color: 'var(--white)', marginBottom: '0.5rem' }}>AI Analysis</h4>
-                <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Our AI cross-checks all factors against pharmaceutical safety standards.</p>
+                <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>System cross-checks NAFDAC registry and storage parameters.</p>
               </div>
 
-              <div className="mobile-snap-item steps-mobile-card" style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 56, height: 56, background: 'var(--card)', border: '2px solid var(--jade-dim)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', fontFamily: 'Fraunces', fontSize: 20, fontWeight: 700, color: 'var(--jade)' }}>4</div>
+              <div
+                className={`mobile-snap-item steps-mobile-card step-node ${activeStep === 4 ? 'active' : ''}`}
+                onClick={() => triggerStepChange(4)}
+                style={{ textAlign: 'center', padding: '0 1rem', position: 'relative', zIndex: 1 }}
+              >
+                <div className="step-circle">4</div>
                 <h4 style={{ fontFamily: 'Fraunces', fontSize: 16, fontWeight: 700, color: 'var(--white)', marginBottom: '0.5rem' }}>Get Report</h4>
-                <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Receive a full safety score and actionable recommendation instantly.</p>
+                <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.65 }}>Receive a verified safety score and clinical pharmacist guidance.</p>
               </div>
             </div>
 
-            <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
-              <button className="btn-primary" style={{ padding: '14px 36px', fontSize: 15, borderRadius: 10 }} onClick={() => showPage('verify')}>Try It Now — It&apos;s Free →</button>
+            {/* 1. SIDE-BY-SIDE DEVICES ROW: PHONE (LEFT) + TABLET (RIGHT) */}
+            <div 
+              className="mobile-scroll-snap"
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '3rem',
+                margin: '3.5rem auto 2.5rem',
+                maxWidth: '1050px',
+                position: 'relative',
+                zIndex: 2,
+              }}
+            >
+              {/* LEFT: 3D DANCING SMARTPHONE */}
+              <div 
+                className="stage-phone-perspective mobile-snap-item"
+                onMouseMove={(e) => handleDeviceMove(e, setPhoneTilt, 18)}
+                onMouseLeave={() => handleDeviceLeave(setPhoneTilt)}
+                style={{ flexShrink: 0 }}
+              >
+                <div 
+                  className={`stage-phone-wrapper ${!phoneTilt.active && !isSpinning ? 'floating' : ''} ${isSpinning ? 'spinning' : ''}`}
+                  style={{
+                    transform: phoneTilt.active && !isSpinning
+                      ? `rotateX(${phoneTilt.x}deg) rotateY(${phoneTilt.y}deg) translateZ(18px) scale(1.03)`
+                      : undefined,
+                  }}
+                >
+                  <div className="stage-phone-inner">
+                    <div className="stage-phone-notch"></div>
+
+                    {activeStep === 1 && (
+                      <div className="screen-fade">
+                        <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', color: 'var(--jade)', letterSpacing: 1, marginBottom: 8 }}>
+                          Step 1 · Mobile Scan
+                        </div>
+                        <div style={{ background: '#0e1812', border: '1px solid var(--line)', borderRadius: 9, padding: '7px 9px', marginBottom: 7 }}>
+                          <div style={{ fontSize: 9, color: 'var(--text3)' }}>DRUG NAME</div>
+                          <div style={{ fontSize: 11.5, color: '#fff', fontWeight: 600 }}>Emzor Paracetamol 500mg</div>
+                        </div>
+                        <div style={{ background: '#0e1812', border: '1px solid var(--line)', borderRadius: 9, padding: '7px 9px', marginBottom: 7 }}>
+                          <div style={{ fontSize: 9, color: 'var(--text3)' }}>NAFDAC REG (NRN)</div>
+                          <div style={{ fontSize: 11.5, color: 'var(--jade)', fontWeight: 700 }}>04-5808</div>
+                        </div>
+                        <div style={{ background: '#0e1812', border: '1px solid var(--line)', borderRadius: 9, padding: '7px 9px', marginBottom: 10 }}>
+                          <div style={{ fontSize: 9, color: 'var(--text3)' }}>BATCH NO</div>
+                          <div style={{ fontSize: 11.5, color: '#fff' }}>EMZ-2024-B12</div>
+                        </div>
+                        <div style={{ marginTop: 'auto', background: 'var(--jade)', color: '#040a06', borderRadius: 8, padding: '7px', textAlign: 'center', fontSize: 11, fontWeight: 700 }}>
+                          Next: Inspection →
+                        </div>
+                      </div>
+                    )}
+
+                    {activeStep === 2 && (
+                      <div className="screen-fade">
+                        <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', color: 'var(--jade)', letterSpacing: 1, marginBottom: 8 }}>
+                          Step 2 · Condition
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
+                          {[
+                            'Factory seal intact',
+                            'Blister unbroken',
+                            'Color uniform',
+                            'Room temperature ok',
+                          ].map((item, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0e1812', padding: '6px 8px', borderRadius: 7, border: '1px solid var(--line)' }}>
+                              <span style={{ color: 'var(--jade)', fontSize: 10, fontWeight: 800 }}>✓</span>
+                              <span style={{ fontSize: 10.5, color: 'var(--text2)' }}>{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ marginTop: 'auto', background: 'var(--jade)', color: '#040a06', borderRadius: 8, padding: '7px', textAlign: 'center', fontSize: 11, fontWeight: 700 }}>
+                          Run Analysis ⚡
+                        </div>
+                      </div>
+                    )}
+
+                    {activeStep === 3 && (
+                      <div className="screen-fade" style={{ alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', border: '2px dashed var(--jade)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'spin 8s linear infinite', marginBottom: 12 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--jade-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+                            🔬
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 3 }}>
+                          Cross-Referencing...
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4, maxWidth: 170 }}>
+                          Matching NRN against official NAFDAC database.
+                        </div>
+                      </div>
+                    )}
+
+                    {activeStep === 4 && (
+                      <div className="screen-fade">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <span style={{ background: 'rgba(0,201,122,0.15)', color: 'var(--jade)', fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 10 }}>
+                            ● SAFE
+                          </span>
+                          <span style={{ fontSize: 9, color: 'var(--text3)' }}>Mobile Verified</span>
+                        </div>
+                        <div style={{ fontFamily: 'Fraunces', fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 2 }}>
+                          Emzor Paracetamol
+                        </div>
+                        <div style={{ background: '#0e1812', border: '1px solid var(--line)', borderRadius: 10, padding: '8px', textAlign: 'center', margin: '6px 0' }}>
+                          <div style={{ fontSize: 8.5, color: 'var(--text3)' }}>SAFETY SCORE</div>
+                          <div style={{ fontFamily: 'Fraunces', fontSize: 24, fontWeight: 800, color: 'var(--jade)', lineHeight: 1.1 }}>
+                            98<span style={{ fontSize: 10, color: 'var(--text3)' }}>/100</span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text2)', lineHeight: 1.4, background: 'rgba(0,201,122,0.06)', padding: '5px 7px', borderRadius: 6 }}>
+                          ✓ Genuine formulation.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT: WIDESCREEN TABLET / PC */}
+              <div 
+                className="stage-laptop-perspective mobile-snap-item"
+                onMouseMove={(e) => handleDeviceMove(e, setLaptopTilt, 12)}
+                onMouseLeave={() => handleDeviceLeave(setLaptopTilt)}
+                style={{ flex: '1 1 480px', maxWidth: '520px' }}
+              >
+                <div 
+                  className="stage-laptop-wrapper"
+                  style={{
+                    transform: laptopTilt.active
+                      ? `rotateX(${laptopTilt.x}deg) rotateY(${laptopTilt.y}deg) translateZ(15px) scale(1.02)`
+                      : 'rotateX(0deg) rotateY(0deg)',
+                  }}
+                >
+                  <div className="stage-laptop-screen">
+                    <div className="laptop-topbar">
+                      <div className="laptop-dot" style={{ background: '#ef4444' }} />
+                      <div className="laptop-dot" style={{ background: '#f59e0b' }} />
+                      <div className="laptop-dot" style={{ background: '#00c97a' }} />
+                      <div style={{ marginLeft: 8, fontSize: 9.5, color: 'var(--text3)', fontFamily: 'monospace' }}>
+                        portal.pharmaverify.ng/verify?step={activeStep}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ width: 22, height: 22, borderRadius: 5, background: 'var(--jade)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#000', fontWeight: 800 }}>
+                            PV
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Clinical Workspace</span>
+                        </div>
+                        <span style={{ fontSize: 10, color: 'var(--jade)', background: 'rgba(0,201,122,0.1)', padding: '3px 10px', borderRadius: 12, fontWeight: 700 }}>
+                          Active Registry Node
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 12, flex: 1 }}>
+                        <div style={{ background: '#0e1812', borderRadius: 10, padding: 12, border: '1px solid var(--line)' }}>
+                          <div style={{ fontSize: 9, color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>
+                            Registry Verification
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Emzor Paracetamol 500mg</div>
+                          <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 3 }}>Manufacturer: Emzor Pharmaceuticals Ltd.</div>
+                          <div style={{ fontSize: 10.5, color: 'var(--jade)', marginTop: 5, fontWeight: 600 }}>NRN: 04-5808 · Validated</div>
+                        </div>
+
+                        <div style={{ background: '#0e1812', borderRadius: 10, padding: 12, border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                          <div style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase' }}>Safety Score</div>
+                          <div style={{ fontFamily: 'Fraunces', fontSize: 30, fontWeight: 800, color: 'var(--jade)', lineHeight: 1.1 }}>
+                            {activeStep === 4 ? '98' : activeStep === 3 ? '...' : '95+'}
+                          </div>
+                          <div style={{ fontSize: 9.5, color: 'var(--text3)', marginTop: 2 }}>Pharmacopeia Standard</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 8, fontSize: 10, color: 'var(--text3)' }}>
+                        <span style={{ background: 'rgba(255,255,255,0.04)', padding: '4px 10px', borderRadius: 6 }}>✓ Packaging Sealed</span>
+                        <span style={{ background: 'rgba(255,255,255,0.04)', padding: '4px 10px', borderRadius: 6 }}>✓ Exp: 2027</span>
+                        <span style={{ background: 'rgba(0,201,122,0.1)', color: 'var(--jade)', padding: '4px 10px', borderRadius: 6 }}>● WHO GMP Aligned</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. CENTERED BUTTON ANCHORED UNDERNEATH BOTH DEVICES */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginTop: '1.5rem', position: 'relative', zIndex: 2 }}>
+              <button
+                className="btn-primary"
+                style={{
+                  padding: '16px 36px',
+                  fontSize: 15,
+                  borderRadius: 12,
+                  boxShadow: '0 8px 28px rgba(0,201,122,0.35)',
+                  minWidth: 240,
+                }}
+                onClick={() => showPage('verify')}
+              >
+                Try It Now — It&apos;s Free →
+              </button>
+              <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 8 }}>
+                Instant verification on <strong style={{ color: 'var(--text2)' }}>Mobile, Tablet &amp; Desktop</strong>
+              </div>
             </div>
           </div>
         </section>
@@ -1029,8 +1634,7 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         </div>
         <section style={{ background: 'var(--deep)' }}>
           <div className="section-inner">
-            <div className="services-grid">
-              <div className="mobile-swipe-indicator">Swipe services ↔</div>
+            <div className="mobile-swipe-indicator">Swipe services ↔</div>
             <div className="services-grid mobile-scroll-snap">
               <div className="service-card mobile-snap-item">
                 <div className="service-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00c97a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></div>
@@ -1068,7 +1672,6 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
                 <p>Equip your dispensary team with pharmaceutical safety training programs, including visual inspection techniques and regulatory counterfeit awareness.</p>
                 <div className="service-tag">Training · Certification</div>
               </div>
-             </div>
             </div>
           </div>
         </section>
@@ -1090,13 +1693,14 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
 
         <div className="pricing-section" id="pricing">
           <div className="section-inner">
-            <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
               <div className="section-kicker">Pricing</div>
               <h2 className="section-title" style={{ margin: '0 auto' }}>Simple, Transparent Plans</h2>
               <p className="section-sub" style={{ margin: '0.75rem auto 0', textAlign: 'center', maxWidth: 400 }}>Start free. Scale as you grow. No hidden fees.</p>
+              <div className="mobile-swipe-indicator">Swipe plans ↔</div>
             </div>
-            <div className="pricing-grid">
-              <div className="price-card">
+            <div className="pricing-grid mobile-scroll-snap">
+              <div className="price-card mobile-snap-item">
                 <div className="price-name">Starter</div>
                 <div className="price-amount">Free<span className="price-period" style={{ fontSize: 16, fontFamily: 'Epilogue' }}> forever</span></div>
                 <div className="price-desc">For individuals and patients verifying personal medications.</div>
@@ -1108,7 +1712,7 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
                 </ul>
                 <button className="price-btn" onClick={() => showPage('verify')}>Get Started →</button>
               </div>
-              <div className="price-card featured">
+              <div className="price-card featured mobile-snap-item">
                 <div className="price-name">Professional</div>
                 <div className="price-amount">₦15,000<span className="price-period">/month</span></div>
                 <div className="price-desc">For community pharmacies and healthcare clinics running frequent checks.</div>
@@ -1121,7 +1725,7 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
                 </ul>
                 <button className="price-btn featured-btn">Start Free Trial →</button>
               </div>
-              <div className="price-card">
+              <div className="price-card mobile-snap-item">
                 <div className="price-name">Enterprise</div>
                 <div className="price-amount">Custom</div>
                 <div className="price-desc">For hospitals, pharmaceutical distributors, and regulatory bodies requiring API access.</div>
@@ -1391,13 +1995,37 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         <div className="footer-inner">
           <div className="footer-top">
             <div className="footer-brand">
-              <div className="logo">
-                <div style={{ width: 30, height: 30, background: 'var(--jade)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#040a06" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem', cursor: 'pointer' }} onClick={() => showPage('home')}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    background: 'linear-gradient(180deg, #14281d 0%, #0b1711 100%)',
+                    border: '1.2px solid rgba(0, 201, 122, 0.55)',
+                    borderRadius: '9px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
+                    <path d="M12 2.5 L20 5.5 V12.5 C20 17.5 16.5 20.8 12 22 C7.5 20.8 4 17.5 4 12.5 V5.5 Z" stroke="rgba(0,201,122,0.4)" strokeWidth="1.2" />
+                    <path d="M12 7 V16 M7.5 11.5 H16.5" stroke="#00c97a" strokeWidth="2.2" strokeLinecap="round" />
+                    <circle cx="12" cy="11.5" r="1.6" fill="#00e68a" />
                   </svg>
                 </div>
-                PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                  <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '18px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.3px' }}>
+                    Pharma
+                  </span>
+                  <span style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', fontSize: '20px', fontWeight: 700, color: '#00c97a', letterSpacing: '-0.2px', marginLeft: '1px' }}>
+                    Verify
+                  </span>
+                  <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '7.5px', fontWeight: 800, letterSpacing: '0.8px', color: '#00c97a', background: 'rgba(0,201,122,0.08)', border: '1px solid rgba(0,201,122,0.3)', borderRadius: '3px', padding: '1px 4px', marginLeft: '5px', lineHeight: 1 }}>
+                    NG
+                  </span>
+                </div>
               </div>
               <p>Africa&apos;s leading pharmaceutical verification platform. Protecting patients and healthcare workers from substandard and counterfeit medicines since 2021.</p>
             </div>
@@ -1454,7 +2082,7 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
         </div>
       </footer>
 
-      {/* IN-APP ARTICLE READER MODAL (OPTION A + B) */}
+      {/* IN-APP ARTICLE READER MODAL */}
       {selectedArticle && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', backdropFilter: 'blur(5px)' }}
@@ -1493,11 +2121,11 @@ html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
 
             <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Link
-  href={`/resources/${selectedArticle.slug}`}
-  style={{ fontSize: 12.5, color: '#00c97a', textDecoration: 'none', fontWeight: 600 }}
->
-  Open Full Page ↗
-</Link>
+                href={`/resources/${selectedArticle.slug}`}
+                style={{ fontSize: 12.5, color: '#00c97a', textDecoration: 'none', fontWeight: 600 }}
+              >
+                Open Full Page ↗
+              </Link>
               <button
                 onClick={() => setSelectedArticle(null)}
                 style={{ background: '#00c97a', border: 'none', color: '#040a06', fontWeight: 700, borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 12.5 }}
