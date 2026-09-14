@@ -363,10 +363,15 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           --white:#ffffff;
         }
 
-        /* Hide scrollbars across all browsers for modals and snap containers */
+        /* Prevent horizontal overflow and hide default scrollbars globally */
+        html, body {
+          max-width: 100vw !important;
+          overflow-x: hidden !important;
+          box-sizing: border-box !important;
+        }
         ::-webkit-scrollbar { display: none !important; }
         html[data-scroll-behavior="smooth"]{scroll-behavior:smooth}
-        body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;overflow-x:hidden;cursor:default}
+        body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;cursor:default}
 
         /* ═══ CURSOR ═══ */
         .cursor,.cursor-ring{display:none}
@@ -414,19 +419,23 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           align-items: center;
           justify-content: space-between;
           width: 100%;
+          position: relative;
         }
         .nav-logo-group{display:inline-flex;align-items:center;gap:11px}
         .nav-tabs{display:flex;align-items:center;gap:0}
         .nav-tab{padding:0 18px;height:68px;display:flex;align-items:center;font-size:13.5px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;letter-spacing:0.1px;position:relative}
         .nav-tab:hover{color:var(--text)}
         .nav-tab.active{color:var(--jade);border-bottom-color:var(--jade)}
-        .nav-right{display:flex;align-items:center;gap:12px}
-        .menu-toggle{display:none;width:36px;height:36px;border:1px solid var(--line2);border-radius:8px;background:transparent;color:var(--text2);cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
-        .nav-mobile-actions{display:none}
+        .nav-right{display:flex;align-items:center;gap:12px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+        .nav-right::-webkit-scrollbar{display:none}
+        
+        .menu-toggle{display:none;width:38px;height:38px;border:1px solid var(--line2);border-radius:9px;background:transparent;color:var(--text2);cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
         .menu-toggle:hover{border-color:var(--jade);color:var(--jade)}
-        .btn-ghost{padding:8px 18px;border:1px solid var(--line2);border-radius:8px;background:transparent;color:var(--text2);font-family:'Epilogue',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+        .nav-mobile-actions{display:none}
+
+        .btn-ghost{padding:8px 18px;border:1px solid var(--line2);border-radius:8px;background:transparent;color:var(--text2);font-family:'Epilogue',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;white-space:nowrap}
         .btn-ghost:hover{border-color:var(--jade);color:var(--jade)}
-        .btn-primary{padding:9px 20px;border:none;border-radius:8px;background:var(--jade);color:var(--void);font-family:'Epilogue',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:0.2px}
+        .btn-primary{padding:9px 20px;border:none;border-radius:8px;background:var(--jade);color:var(--void);font-family:'Epilogue',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:0.2px;white-space:nowrap}
         .btn-primary:hover{background:#00e68a;transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,201,122,0.3)}
 
         /* ═══ PAGE SYSTEM ═══ */
@@ -464,7 +473,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         .section-title{font-family:'Fraunces',serif;font-size:clamp(2rem,4vw,3rem);font-weight:700;color:var(--white);letter-spacing:-1px;line-height:1.15;margin-bottom:1rem}
         .section-sub{font-size:16px;color:var(--text2);font-weight:300;line-height:1.7;max-width:500px}
 
-        /* ═══ PROCESS INTERACTIVE STAGE & DUAL-DEVICE 3D DISPLAY ═══ */
+        /* ═══ PROCESS INTERACTIVE STAGE & STACKED DEVICES DISPLAY ═══ */
         .process-stage-section {
           position: relative;
           overflow: hidden;
@@ -528,7 +537,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         }
         .step-node.active h4{color:var(--jade) !important}
 
-        /* Desktop Dual Device Row */
+        /* Dual Devices Row */
         .dual-devices-row {
           display: flex;
           flex-direction: row;
@@ -541,7 +550,15 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           z-index: 2;
         }
 
-        /* 3D Phone Chassis on the Left */
+        @media (max-width: 900px) {
+          .dual-devices-row {
+            flex-direction: column !important;
+            gap: 2.5rem !important;
+            align-items: center !important;
+          }
+        }
+
+        /* 3D Phone Chassis */
         .stage-phone-perspective {
           perspective: 1200px;
           display: flex;
@@ -620,13 +637,14 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           margin: 0 auto 12px;
         }
 
-        /* Laptop / Tablet Perspective & Pressure Tilt */
+        /* Tablet / PC Perspective */
         .stage-laptop-perspective {
           perspective: 1400px;
           display: flex;
           justify-content: center;
           flex: 1 1 480px;
           max-width: 520px;
+          width: 100%;
         }
 
         .stage-laptop-wrapper {
@@ -942,13 +960,96 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         }
         @media(max-width:600px){
           .services-grid,.features-grid,.pricing-grid,.team-grid,.resources-grid,.footer-top{grid-template-columns:1fr}
-          nav{padding:0 1rem}
-          .menu-toggle{display:flex}
-          .nav-tabs{display:${mobileNavOpen ? 'flex' : 'none'};position:absolute;top:68px;left:0;right:0;background:var(--card);border-bottom:1px solid var(--line);flex-direction:column;padding:0.5rem 0;z-index:499;box-shadow:0 20px 40px rgba(0,0,0,0.4)}
-          .nav-tab{height:auto;padding:14px 1.5rem;border-bottom:1px solid var(--line);width:100%}
-          .nav-right .btn-ghost{display:none !important}
-          .nav-mobile-actions{display:flex;flex-direction:column;gap:8px;padding:1rem 1.5rem;border-top:1px solid var(--line);margin-top:0.5rem}
-          .nav-mobile-actions a{width:100%;text-align:center;text-decoration:none;padding:12px;border-radius:8px;font-family:'epilogue',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+          
+          /* Navbar layout for mobile: Logo on left, scrollable items + hamburger menu on right */
+          nav {
+            padding: 0 1rem !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
+            position: relative !important;
+          }
+          .nav-logo-group {
+            display: inline-flex !important;
+            align-items: center !important;
+            flex-shrink: 0 !important;
+          }
+          
+          /* Hide desktop horizontal tabs on mobile */
+          .nav-tabs {
+            display: none !important;
+          }
+
+          /* Show Hamburger button on mobile */
+          .menu-toggle {
+            display: flex !important;
+          }
+
+          /* Mobile dropdown menu triggered by hamburger */
+          .nav-tabs.mobile-open {
+            display: flex !important;
+            position: absolute !important;
+            top: 68px !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: var(--card) !important;
+            border-bottom: 1px solid var(--line) !important;
+            flex-direction: column !important;
+            padding: 0.5rem 0 !important;
+            z-index: 499 !important;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important;
+          }
+          .nav-tab {
+            height: auto !important;
+            padding: 14px 1.5rem !important;
+            border-bottom: 1px solid var(--line) !important;
+            width: 100% !important;
+          }
+          .nav-tab.active {
+            color: var(--jade) !important;
+            border-bottom-color: var(--line) !important;
+          }
+
+          .nav-mobile-actions {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+            padding: 1rem 1.5rem !important;
+            border-top: 1px solid var(--line) !important;
+            margin-top: 0.5rem !important;
+          }
+          .nav-mobile-actions a {
+            width: 100% !important;
+            text-align: center !important;
+            text-decoration: none !important;
+            padding: 12px !important;
+            border-radius: 8px !important;
+            font-family: 'Epilogue', sans-serif !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+          }
+
+          /* Make right action buttons side-scrollable so Sign In doesn't clip */
+          .nav-right {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            overflow-x: auto !important;
+            max-width: 55vw !important;
+            padding-bottom: 4px !important;
+          }
+          .nav-right .btn-ghost {
+            display: inline-flex !important;
+            white-space: nowrap !important;
+          }
+          .nav-right .btn-primary {
+            white-space: nowrap !important;
+            padding: 8px 14px !important;
+            font-size: 12.5px !important;
+          }
+
           .topbar{flex-direction:column;align-items:center;gap:5px;padding:10px 1rem;text-align:center}
           .topbar-left{flex-direction:column;gap:4px;align-items:center}
         }
@@ -972,53 +1073,49 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
 
         {/* NAV */}
         <nav>
-          <button className="menu-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)} title="Menu">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-
-          <div
-            onClick={() => showPage('home')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '11px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              textDecoration: 'none'
-            }}
-          >
+          <div className="nav-logo-group">
             <div
+              onClick={() => showPage('home')}
               style={{
-                width: '38px',
-                height: '38px',
-                background: 'linear-gradient(180deg, #14281d 0%, #0b1711 100%)',
-                border: '1.2px solid rgba(0, 201, 122, 0.55)',
-                borderRadius: '11px',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 10px rgba(0, 201, 122, 0.18)',
-                flexShrink: 0
+                gap: '11px',
+                cursor: 'pointer',
+                userSelect: 'none',
+                textDecoration: 'none'
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
-                <path d="M12 2.5 L20 5.5 V12.5 C20 17.5 16.5 20.8 12 22 C7.5 20.8 4 17.5 4 12.5 V5.5 Z" stroke="rgba(0,201,122,0.4)" strokeWidth="1.4" />
-                <path d="M12 7 V16 M7.5 11.5 H16.5" stroke="#00c97a" strokeWidth="2.4" strokeLinecap="round" />
-                <circle cx="12" cy="11.5" r="1.8" fill="#00e68a" />
-              </svg>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
-              <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '21px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.3px' }}>
-                Pharma
-              </span>
-              <span style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', fontSize: '24px', fontWeight: 700, color: '#00c97a', letterSpacing: '-0.2px', marginLeft: '1px' }}>
-                Verify
-              </span>
-              <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '8.5px', fontWeight: 800, letterSpacing: '0.8px', color: '#00c97a', background: 'rgba(0,201,122,0.08)', border: '1px solid rgba(0,201,122,0.3)', borderRadius: '4px', padding: '2px 5px', marginLeft: '6px', lineHeight: 1 }}>
-                NG
-              </span>
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  background: 'linear-gradient(180deg, #14281d 0%, #0b1711 100%)',
+                  border: '1.2px solid rgba(0, 201, 122, 0.55)',
+                  borderRadius: '11px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 10px rgba(0, 201, 122, 0.18)',
+                  flexShrink: 0
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
+                  <path d="M12 2.5 L20 5.5 V12.5 C20 17.5 16.5 20.8 12 22 C7.5 20.8 4 17.5 4 12.5 V5.5 Z" stroke="rgba(0,201,122,0.4)" strokeWidth="1.4" />
+                  <path d="M12 7 V16 M7.5 11.5 H16.5" stroke="#00c97a" strokeWidth="2.4" strokeLinecap="round" />
+                  <circle cx="12" cy="11.5" r="1.8" fill="#00e68a" />
+                </svg>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '21px', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.3px' }}>
+                  Pharma
+                </span>
+                <span style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', fontSize: '24px', fontWeight: 700, color: '#00c97a', letterSpacing: '-0.2px', marginLeft: '1px' }}>
+                  Verify
+                </span>
+                <span style={{ fontFamily: "'Epilogue', sans-serif", fontSize: '8.5px', fontWeight: 800, letterSpacing: '0.8px', color: '#00c97a', background: 'rgba(0,201,122,0.08)', border: '1px solid rgba(0,201,122,0.3)', borderRadius: '4px', padding: '2px 5px', marginLeft: '6px', lineHeight: 1 }}>
+                  NG
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1029,17 +1126,22 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             <div className={`nav-tab ${activeTab === 'contact' ? 'active' : ''}`} onClick={() => showPage('contact')}>Contact</div>
 
             <div className="nav-mobile-actions">
-              <Link href="/signup" style={{ border: '1px solid var(--line2)', color: 'var(--text2)', background: 'transparent' }}>Sign Up</Link>
-              <Link href="/signin" style={{ border: '1px solid var(--jade)', color: 'var(--jade)', background: 'transparent' }}>Sign In</Link>
+              <Link href="/signup" style={{ border: '1px solid var(--line2)', color: 'var(--text2)', background: 'transparent', textAlign: 'center', textDecoration: 'none' }}>Sign Up</Link>
+              <Link href="/signin" style={{ border: '1px solid var(--jade)', color: 'var(--jade)', background: 'transparent', textAlign: 'center', textDecoration: 'none' }}>Sign In</Link>
             </div>
           </div>
 
-          <div className="nav-right">
-            <Link href="/signup" className="btn-ghost" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>Sign Up</Link>
+          <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link href="/signup" className="btn-ghost" style={{ textDecoration: 'none' }}>Sign Up</Link>
             <Link href="/signin" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" /></svg>
               Sign In
             </Link>
+            <button className="menu-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)} title="Menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
           </div>
         </nav>
       </div>
@@ -1161,7 +1263,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
           </div>
         </section>
 
-        {/* ═══ PROCESS WITH BLURRED ROTATING BACKDROP & DUAL-DEVICE 3D SHOWCASE ═══ */}
+        {/* ═══ PROCESS WITH BLURRED ROTATING BACKDROP & STACKED DEVICES ═══ */}
         <section className="process-stage-section">
           {/* Blurred Rotating Pharmaceutical Backdrop */}
           <div className="process-backdrop-slides">
@@ -1237,7 +1339,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               </div>
             </div>
 
-            {/* DUAL DEVICES ROW (STACKS VERTICALLY ON MOBILE SO PHONE IS FULLY VISIBLE) */}
+            {/* DEVICES ROW: PHONE ON TOP, TABLET UNDERNEATH */}
             <div className="dual-devices-row">
               {/* LEFT: 3D DANCING SMARTPHONE */}
               <div 
@@ -1345,7 +1447,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                 </div>
               </div>
 
-              {/* RIGHT: WIDESCREEN TABLET / PC */}
+              {/* RIGHT: TABLET / PC (Stacked directly under phone on mobile) */}
               <div 
                 className="stage-laptop-perspective"
                 onMouseMove={(e) => handleDeviceMove(e, setLaptopTilt, 12)}
