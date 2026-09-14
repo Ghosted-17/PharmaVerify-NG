@@ -244,6 +244,20 @@ export default function HomePage() {
     }
 
     const activeWarnings = warnings.filter((w) => w !== 'none');
+    const isBulkDispensed = packaging === 'dispensing_envelope';
+    const isTrustedSource = source === 'pharmacy' || source === 'hospital';
+
+    let packagingRules = "";
+    if (isBulkDispensed) {
+      if (isTrustedSource) {
+        packagingRules = "SPECIAL BULK RULE: Drug is in a pharmacy/hospital dispensing envelope or ziplock. DO NOT penalize for missing NAFDAC/Expiry. Evaluate its safety naturally based on physical condition and source. Do NOT explicitly state 'it passed because of the envelope rule' — just write a professional, natural clinical summary indicating it appears safe for use while noting standard handling precautions.";
+      } else {
+        packagingRules = "SPECIAL BULK RULE: Drug is in loose packaging from an unverified source (open market/hawker). Score as UNSAFE. State clearly that buying loose medications outside of licensed pharmacies is hazardous.";
+      }
+    } else {
+      packagingRules = "STANDARD PACKAGING RULE: Evaluate commercial packaging normally according to standard pharmacopeial safety.";
+    }
+
     const prompt = `You are a pharmaceutical safety expert in Nigeria. Analyse these medication details and cross-check NAFDAC registration conformity, expiration validity, and packaging integrity. Return ONLY valid JSON, no markdown, no extra text.
 
 Details:
@@ -260,9 +274,13 @@ Details:
 - Warning signs: ${activeWarnings.length ? activeWarnings.join(', ') : 'None'}
 
 Return exactly:
-{"status":"SAFE"|"CAUTION"|"UNSAFE"|"UNKNOWN","safetyScore":<0-100>,"summary":"<2-3 sentences>","flags":[{"type":"ok"|"warn"|"bad","message":"<specific finding>"}],"recommendation":"<clear actionable advice>","proTip":"<one expert tip>"}
+{"status":"SAFE"|"CAUTION"|"UNSAFE"|"UNKNOWN","safetyScore":<0-100>,"summary":"<2-3 sentences providing a natural, professional clinical assessment without exposing underlying system rules>","flags":[{"type":"ok"|"warn"|"bad","message":"<specific finding>"}],"recommendation":"<clear actionable advice>","proTip":"<one expert tip>"}
 
-Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+physical changes=UNSAFE. Standard valid format for NAFDAC NRN is A4-XXXX, 04-XXXX, B4-XXXX. Missing key information=UNKNOWN. Always recommend consulting a licensed pharmacist or physician.`;
+Rules:
+1. Expired = UNSAFE.
+2. Damaged packaging + physical changes = UNSAFE.
+3. ${packagingRules}
+4. Always recommend consulting a licensed pharmacist or physician.`;
 
     try {
       const res = await fetch('/api/gemini', {
@@ -1400,7 +1418,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                           ))}
                         </div>
                         <div style={{ marginTop: 'auto', background: 'var(--jade)', color: '#040a06', borderRadius: 8, padding: '7px', textAlign: 'center', fontSize: 11, fontWeight: 700 }}>
-                          Run Analysis ⚡
+                          Analyzing... ⚡
                         </div>
                       </div>
                     )}
@@ -1413,7 +1431,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                           </div>
                         </div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 3 }}>
-                          Cross-Referencing...
+                          Analyzing...
                         </div>
                         <div style={{ fontSize: 10, color: 'var(--text3)', lineHeight: 1.4, maxWidth: 170 }}>
                           Matching NRN against official NAFDAC database.
@@ -1606,6 +1624,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
                     <option value="">Select condition</option>
                     <option value="intact">Intact & factory sealed</option>
                     <option value="opened">Opened but undamaged</option>
+                    <option value="dispensing_envelope">Pharmacy dispensing envelope / Ziplock</option>
                     <option value="damaged">Damaged / torn / wet</option>
                     <option value="repackaged">Repackaged / suspicious</option>
                     <option value="missing">No packaging / loose</option>
@@ -1661,7 +1680,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
               </div>
               <button className="verify-btn" onClick={runVerification} disabled={loading}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                {loading ? 'Analysing...' : 'Run Verification Analysis'}
+                {loading ? 'Analyzing...' : 'Run Verification Analysis'}
               </button>
             </div>
 
@@ -2029,6 +2048,94 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
         </section>
       </div>
 
+      {/* ════════════════════════ PAGE: CONTACT ════════════════════════ */}
+      <div className={`page ${activeTab === 'contact' ? 'active' : ''}`}>
+        <section>
+          <div className="contact-layout">
+            <div className="contact-info">
+              <div className="section-kicker">Get in Touch</div>
+              <h2>We&apos;re here to help</h2>
+              <p>Whether you have a question about a drug verification, want to report a suspected counterfeit, or need API integration support, our team is ready to assist you.</p>
+              
+              <div className="contact-methods">
+                <div className="contact-method">
+                  <div className="cm-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                  </div>
+                  <div>
+                    <div className="cm-label">Email Support</div>
+                    <div className="cm-val">support@pharmaverify.ng</div>
+                  </div>
+                </div>
+                <div className="contact-method">
+                  <div className="cm-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>
+                  </div>
+                  <div>
+                    <div className="cm-label">Emergency Helpline (NAFDAC)</div>
+                    <div className="cm-val">0800-1-NAFDAC</div>
+                  </div>
+                </div>
+                <div className="contact-method">
+                  <div className="cm-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                  </div>
+                  <div>
+                    <div className="cm-label">Head Office</div>
+                    <div className="cm-val">Plot 1, Isheri Road, Ikeja, Lagos</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="contact-form">
+              <h3>Send us a message</h3>
+              {contactSuccess ? (
+                <div style={{ background: 'var(--jade-pale)', color: 'var(--jade)', padding: '2rem', borderRadius: 12, textAlign: 'center', border: '1px solid rgba(0,201,122,0.2)' }}>
+                  <div style={{ fontSize: 40, marginBottom: '1rem' }}>✓</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: '0.5rem' }}>Message Sent Successfully</div>
+                  <p style={{ fontSize: 13.5, color: 'var(--text2)' }}>Thank you for reaching out. A member of our support team will get back to you within 24 hours.</p>
+                </div>
+              ) : (
+                <div className="form-grid" style={{ gap: '1rem' }}>
+                  <div className="field full">
+                    <label>Full Name *</label>
+                    <input type="text" placeholder="Your name" value={contactName} onChange={(e) => setContactName(e.target.value)} />
+                  </div>
+                  <div className="field">
+                    <label>Organisation</label>
+                    <input type="text" placeholder="Company / Hospital" value={contactOrg} onChange={(e) => setContactOrg(e.target.value)} />
+                  </div>
+                  <div className="field">
+                    <label>Email Address *</label>
+                    <input type="email" placeholder="you@example.com" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+                  </div>
+                  <div className="field full">
+                    <label>Enquiry Type</label>
+                    <select value={contactType} onChange={(e) => setContactType(e.target.value)}>
+                      <option value="General enquiry">General enquiry</option>
+                      <option value="Report counterfeit">Report suspected counterfeit</option>
+                      <option value="API Access">Enterprise API Access</option>
+                      <option value="Technical support">Technical support</option>
+                      <option value="Partnership">Partnership opportunity</option>
+                    </select>
+                  </div>
+                  <div className="field full">
+                    <label>Message *</label>
+                    <textarea placeholder="How can we help you?" style={{ minHeight: 120 }} value={contactMsg} onChange={(e) => setContactMsg(e.target.value)}></textarea>
+                  </div>
+                  <div className="field full">
+                    <button className="submit-btn" onClick={handleSendContact} disabled={contactSending}>
+                      {contactSending ? 'Sending...' : 'Send Message →'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+
       {/* ════════════════════════ FOOTER ════════════════════════ */}
       <footer className="footer">
         <div className="footer-inner">
@@ -2216,7 +2323,7 @@ Rules: Expired=UNSAFE. Open market source=CAUTION at minimum. Damaged packaging+
             <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
               <button
                 onClick={() => setActiveLegalDoc(null)}
-                style={{ background: '#00c97a', border: 'none', color: '#040a06', fontWeight: 700, borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 12.5 }}
+                style={{ background: '#00c97a', border: '1px solid #040a06', color: '#040a06', fontWeight: 700, borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 12.5 }}
               >
                 Close Document
               </button>

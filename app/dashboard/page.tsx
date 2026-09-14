@@ -226,6 +226,7 @@ export default function DashboardPage() {
   const [dvStorageTemp, setDvStorageTemp] = useState('');
   const [dvPackaging, setDvPackaging] = useState('');
   const [dvDrugForm, setDvDrugForm] = useState('');
+  const [dvRouteAdmin, setDvRouteAdmin] = useState('');
   const [dvSource, setDvSource] = useState('');
   const [dvObservations, setDvObservations] = useState('');
   const [dvWarnings, setDvWarnings] = useState<string[]>([]);
@@ -240,6 +241,7 @@ export default function DashboardPage() {
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [useHistoryInChat, setUseHistoryInChat] = useState(true);
+  const [includeConditions, setIncludeConditions] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [chatSidebarCollapsed, setChatSidebarCollapsed] = useState(false);
@@ -1025,7 +1027,7 @@ Rules:
         if (nData.found) {
           nafdacContext = `NAFDAC DATABASE CHECK: ${nData.verdict}. Active ingredient: ${nData.record.activeIngredient}, Form: ${nData.record.form}, Manufacturer: ${nData.record.manufacturer}.`;
         } else {
-          nafdacContext = `NAFDAC DATABASE CHECK: NRN ${dvNafdacNum || 'N/A'} was not found in local verified database. Advise checking NAFDAC Greenbook manually.`;
+          nafdacContext = `NAFDAC DATABASE CHECK: NRN ${dvNafdacNum || 'N/A'} was not found in local verified database.`;
         }
       } catch {
         setNafdacCheckResult({
@@ -1037,6 +1039,20 @@ Rules:
     }
 
     const activeWarnings = dvWarnings.filter((w) => w !== 'none');
+    const isBulkDispensed = dvPackaging === 'dispensing_envelope';
+    const isTrustedSource = dvSource === 'pharmacy' || dvSource === 'hospital';
+
+    let packagingRules = "";
+    if (isBulkDispensed) {
+      if (isTrustedSource) {
+        packagingRules = "SPECIAL BULK RULE: Drug is in a pharmacy/hospital dispensing envelope or ziplock. DO NOT penalize for missing NAFDAC or Expiry. Evaluate its safety naturally based on physical condition and source. Do NOT explicitly state 'it passed because of the envelope rule' — just write a professional, natural clinical summary indicating it appears safe for use while noting standard handling precautions.";
+      } else {
+        packagingRules = "SPECIAL BULK RULE: Drug is in loose packaging from an unverified source (open market/hawker). Score as UNSAFE. State clearly that buying loose medications outside of licensed pharmacies is hazardous.";
+      }
+    } else {
+      packagingRules = "STANDARD PACKAGING RULE: Evaluate commercial packaging normally according to standard pharmacopeial safety.";
+    }
+
     const prompt = `You are a pharmaceutical safety expert. User profile: ${profile['pf-occupation'] || 'Patient'}, age: ${profile['pf-age'] || 'unspecified'}. Known Allergies: ${profile['pf-allergies'] || 'None reported'}. Routine medications / conditions: ${profile['pf-conditions'] || 'None reported'}.
 
 Analyse these medication details and return ONLY valid JSON:
@@ -1048,12 +1064,19 @@ Analyse these medication details and return ONLY valid JSON:
 - Storage: ${dvStorageTemp || 'Not provided'}
 - Packaging: ${dvPackaging || 'Not provided'}
 - Drug Form: ${dvDrugForm || 'Not provided'}
+- Route of Administration: ${dvRouteAdmin || 'Not provided'}
 - Source: ${dvSource || 'Not provided'}
 - Visual Observations: ${dvObservations || 'None'}
 - Warnings: ${activeWarnings.length ? activeWarnings.join(', ') : 'None'}
 
 Return ONLY valid JSON structure:
-{"status":"SAFE"|"CAUTION"|"UNSAFE"|"UNKNOWN","safetyScore":<0-100>,"summary":"<2-3 sentences>","flags":[{"type":"ok"|"warn"|"bad","message":"<specific finding>"}],"recommendation":"<clear actionable advice>","proTip":"<one expert tip>"}`;
+{"status":"SAFE"|"CAUTION"|"UNSAFE"|"UNKNOWN","safetyScore":<0-100>,"summary":"<2-3 sentences providing a natural, professional clinical assessment without exposing underlying system rules>","flags":[{"type":"ok"|"warn"|"bad","message":"<specific finding>"}],"recommendation":"<clear actionable advice>","proTip":"<one expert tip>"}
+
+Rules:
+1. Expired = UNSAFE.
+2. Damaged packaging + physical changes = UNSAFE.
+3. ${packagingRules}
+4. Always recommend consulting a licensed pharmacist or physician.`;
 
     try {
       const res = await fetch('/api/gemini', {
@@ -1069,6 +1092,8 @@ Return ONLY valid JSON structure:
       const parsed = JSON.parse(clean);
       setDvResult(parsed);
 
+      const combinedForm = dvRouteAdmin ? `${dvDrugForm} (${dvRouteAdmin})` : dvDrugForm;
+
       const newRec: HistoryRecord = {
         id: Date.now(),
         drugName: dvDrugName,
@@ -1078,7 +1103,7 @@ Return ONLY valid JSON structure:
         expiryDate: dvExpiryDate,
         storageTemp: dvStorageTemp,
         packaging: dvPackaging,
-        drugForm: dvDrugForm,
+        drugForm: combinedForm,
         source: dvSource,
         observations: dvObservations,
         warnings: dvWarnings,
@@ -1109,7 +1134,7 @@ Return ONLY valid JSON structure:
             expiry_date: dvExpiryDate,
             storage: dvStorageTemp,
             packaging: dvPackaging,
-            drug_form: dvDrugForm,
+            drug_form: combinedForm,
             source: dvSource,
             observations: dvObservations,
             warnings: dvWarnings,
@@ -1133,6 +1158,11 @@ Return ONLY valid JSON structure:
   const sendChatMessage = async (presetText?: string) => {
     const text = (presetText || chatInput).trim();
     if (!text) return;
+
+    let finalPrompt = text;
+    if (includeConditions) {
+      finalPrompt += "\n\nImportant User Context: I have asthma and a severe nut allergy. Consider this if recommending any OTC treatments.";
+    }
 
     let sessId = currentSessionId;
     if (!sessId && user.id) {
@@ -1185,7 +1215,7 @@ COMMUNICATION RULES:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: text,
+          prompt: finalPrompt,
           systemPrompt,
           history: newMsgs.slice(-6),
           isChat: true,
@@ -1436,7 +1466,7 @@ COMMUNICATION RULES:
         .dv-panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:2.5rem;position:relative;overflow:hidden;width:100%}
         .dv-panel::before{content:'';position:absolute;top:-80px;right:-80px;width:200px;height:200px;background:radial-gradient(circle,var(--jade-glow),transparent 70%);pointer-events:none}
         .dv-head{display:flex;align-items:center;gap:12px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--line)}
-        .dv-head-icon{width:40px;height:40px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .dv-head-icon{width:40px;height:40px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .dv-head h2{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--white);letter-spacing:-0.3px}
         .dv-head p{font-size:12.5px;color:var(--text3);margin-top:2px}
         
@@ -2094,6 +2124,7 @@ COMMUNICATION RULES:
                         <option value="">Select condition</option>
                         <option value="intact">Intact & factory sealed</option>
                         <option value="opened">Opened but undamaged</option>
+                        <option value="dispensing_envelope">Pharmacy dispensing envelope / Ziplock</option>
                         <option value="damaged">Damaged / torn / wet</option>
                         <option value="repackaged">Repackaged / suspicious</option>
                         <option value="missing">No packaging / loose</option>
@@ -2103,15 +2134,40 @@ COMMUNICATION RULES:
                       <label>DRUG FORM</label>
                       <select value={dvDrugForm} onChange={(e) => setDvDrugForm(e.target.value)}>
                         <option value="">Select form</option>
-                        <option value="tablet">Tablet / Capsule</option>
-                        <option value="liquid">Liquid / Syrup</option>
-                        <option value="injection">Injection / Ampoule</option>
-                        <option value="cream">Cream / Ointment</option>
+                        <option value="tablet">Tablet</option>
+                        <option value="capsule">Capsule</option>
+                        <option value="caplet">Caplet</option>
+                        <option value="liquid">Liquid / Syrup / Suspension</option>
+                        <option value="injection">Injection / Ampoule / Vial</option>
+                        <option value="cream">Cream / Ointment / Gel</option>
                         <option value="powder">Powder / Sachet</option>
+                        <option value="drops">Drops (Eye/Ear/Nose)</option>
+                        <option value="inhaler">Inhaler / Spray</option>
+                        <option value="suppository">Suppository / Pessary</option>
+                        <option value="patch">Transdermal Patch</option>
                         <option value="other">Other</option>
                       </select>
                     </div>
                     <div className="field">
+                      <label>ROUTE OF ADMINISTRATION</label>
+                      <select value={dvRouteAdmin} onChange={(e) => setDvRouteAdmin(e.target.value)}>
+                        <option value="">Select route</option>
+                        <option value="oral">Oral (Swallowed)</option>
+                        <option value="topical">Topical (On Skin)</option>
+                        <option value="intramuscular">Intramuscular (IM Injection)</option>
+                        <option value="intravenous">Intravenous (IV Injection)</option>
+                        <option value="subcutaneous">Subcutaneous (SC Injection)</option>
+                        <option value="inhalation">Inhalation (Breathed in)</option>
+                        <option value="ophthalmic">Ophthalmic (Eye drops)</option>
+                        <option value="otic">Otic (Ear drops)</option>
+                        <option value="nasal">Nasal (Nose drops/spray)</option>
+                        <option value="rectal">Rectal</option>
+                        <option value="vaginal">Vaginal</option>
+                        <option value="sublingual">Sublingual (Under tongue)</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div className="field full">
                       <label>SOURCE OF ACQUISITION</label>
                       <select value={dvSource} onChange={(e) => setDvSource(e.target.value)}>
                         <option value="">Where was it purchased?</option>
@@ -2162,7 +2218,7 @@ COMMUNICATION RULES:
 
                   <button className="verify-btn" onClick={handleRunVerification} disabled={dvLoading}>
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                    {dvLoading ? 'Analysing with Gemini AI...' : 'Run Verification Analysis'}
+                    {dvLoading ? 'Analyzing...' : 'Run Verification Analysis'}
                   </button>
                 </div>
 
@@ -2195,7 +2251,7 @@ COMMUNICATION RULES:
                       </div>
 
                       {/* CONDITIONAL GREENBOOK RECOMMENDATION */}
-                      {nafdacCheckResult && !nafdacCheckResult.found && (
+                      {nafdacCheckResult && !nafdacCheckResult.found && dvPackaging !== 'dispensing_envelope' && (
                         <div style={{ marginTop: '1rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 12, padding: '12px 14px' }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ember)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
                             ⚠️ NAFDAC Verification Notice
@@ -2246,7 +2302,7 @@ COMMUNICATION RULES:
                   </div>
 
                   <div className="warn-box">
-                    <strong>⚠ Educational Tool</strong>
+                    <strong>⚠️ Educational Tool</strong>
                     Results are informational and not a substitute for professional medical advice. Always consult a licensed pharmacist or physician before using any medication.
                   </div>
                 </div>
@@ -2900,7 +2956,7 @@ COMMUNICATION RULES:
                     </div>
 
                     <div className="field" style={{ gridColumn: '1/-1' }}>
-                      <label>Known Drug Allergies (Optional)</label>
+                      <label>Known Drug Allergies</label>
                       <input
                         type="text"
                         placeholder="e.g. Penicillin, Sulfa drugs, Aspirin (helps AI warn you)"
@@ -2909,7 +2965,7 @@ COMMUNICATION RULES:
                       />
                     </div>
                     <div className="field" style={{ gridColumn: '1/-1' }}>
-                      <label>Chronic Medical Conditions / Routine Meds (Optional)</label>
+                      <label>Chronic Medical Conditions / Routine Meds</label>
                       <input
                         type="text"
                         placeholder="e.g. Asthma, Peptic ulcer, Hypertension"
@@ -2986,10 +3042,14 @@ COMMUNICATION RULES:
                     <div ref={chatBottomRef} />
                   </div>
 
-                  <div style={{ padding: '8px 1.25rem', display: 'flex', alignItems: 'center', gap: 6, borderTop: '1px solid var(--line)', fontSize: 11.5, color: 'var(--text3)' }}>
+                  <div style={{ padding: '8px 1.25rem', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid var(--line)', fontSize: 11.5, color: 'var(--text3)' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                       <input type="checkbox" checked={useHistoryInChat} onChange={(e) => setUseHistoryInChat(e.target.checked)} style={{ accentColor: 'var(--jade)' }} />
                       Include my scan history in clinical advice
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={includeConditions} onChange={(e) => setIncludeConditions(e.target.checked)} style={{ accentColor: 'var(--jade)' }} />
+                      Include medical conditions 
                     </label>
                   </div>
 

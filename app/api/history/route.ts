@@ -24,60 +24,24 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { action, user_id } = body;
 
-    if (!user_id) {
-      return NextResponse.json({ error: 'user_id required' }, { status: 400 });
-    }
-
     // ── SAVE SCAN ────────────────────────────────────────────
     if (action === 'save') {
+      if (!user_id) return NextResponse.json({ error: 'user_id required' }, { status: 400 });
       const {
-        drug_name,
-        manufacturer,
-        batch_num,
-        nafdac_num,
-        expiry_date,
-        storage,
-        packaging,
-        drug_form,
-        source,
-        observations,
-        warnings,
-        status,
-        safety_score,
-        summary,
-        flags,
-        recommendation,
-        pro_tip,
-        age_note,
+        drug_name, manufacturer, batch_num, nafdac_num, expiry_date,
+        storage, packaging, drug_form, source, observations, warnings,
+        status, safety_score, summary, flags, recommendation, pro_tip, age_note,
       } = body;
 
       const result = await supabase('POST', 'scan_history', {
-        user_id,
-        drug_name,
-        manufacturer,
-        batch_num,
-        nafdac_num,
-        expiry_date,
-        storage,
-        packaging,
-        drug_form,
-        source,
-        observations,
-        warnings: warnings || [],
-        status,
-        safety_score,
-        summary,
-        flags: flags || [],
-        recommendation,
-        pro_tip,
-        age_note,
+        user_id, drug_name, manufacturer, batch_num, nafdac_num, expiry_date,
+        storage, packaging, drug_form, source, observations,
+        warnings: warnings || [], status, safety_score, summary,
+        flags: flags || [], recommendation, pro_tip, age_note,
       });
 
       if (!result.ok) {
-        return NextResponse.json(
-          { error: result.data?.message || 'Save failed' },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: result.data?.message || 'Save failed' }, { status: 500 });
       }
 
       const saved = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -86,6 +50,7 @@ export async function POST(req: Request) {
 
     // ── GET SCAN HISTORY ─────────────────────────────────────
     if (action === 'get') {
+      if (!user_id) return NextResponse.json({ error: 'user_id required' }, { status: 400 });
       const result = await supabase(
         'GET',
         `scan_history?user_id=eq.${user_id}&order=created_at.desc&select=*`
@@ -101,9 +66,7 @@ export async function POST(req: Request) {
     // ── DELETE SCAN ──────────────────────────────────────────
     if (action === 'delete') {
       const { scan_id } = body;
-      if (!scan_id) {
-        return NextResponse.json({ error: 'scan_id required' }, { status: 400 });
-      }
+      if (!scan_id || !user_id) return NextResponse.json({ error: 'scan_id required' }, { status: 400 });
 
       const result = await supabase(
         'DELETE',
@@ -119,6 +82,7 @@ export async function POST(req: Request) {
 
     // ── CREATE CHAT SESSION ──────────────────────────────────
     if (action === 'create_session') {
+      if (!user_id) return NextResponse.json({ error: 'user_id required' }, { status: 400 });
       const { title } = body;
       const result = await supabase('POST', 'chat_sessions', {
         user_id,
@@ -135,6 +99,7 @@ export async function POST(req: Request) {
 
     // ── GET ALL CHAT SESSIONS ────────────────────────────────
     if (action === 'get_sessions') {
+      if (!user_id) return NextResponse.json({ error: 'user_id required' }, { status: 400 });
       const result = await supabase(
         'GET',
         `chat_sessions?user_id=eq.${user_id}&order=is_pinned.desc,updated_at.desc&select=*`
@@ -150,9 +115,7 @@ export async function POST(req: Request) {
     // ── GET MESSAGES FOR A SESSION ───────────────────────────
     if (action === 'get_messages') {
       const { session_id } = body;
-      if (!session_id) {
-        return NextResponse.json({ error: 'session_id required' }, { status: 400 });
-      }
+      if (!session_id) return NextResponse.json({ error: 'session_id required' }, { status: 400 });
 
       const result = await supabase(
         'GET',
@@ -189,9 +152,7 @@ export async function POST(req: Request) {
     // ── DELETE SESSION ───────────────────────────────────────
     if (action === 'delete_session') {
       const { session_id } = body;
-      if (!session_id) {
-        return NextResponse.json({ error: 'session_id required' }, { status: 400 });
-      }
+      if (!session_id || !user_id) return NextResponse.json({ error: 'session_id required' }, { status: 400 });
 
       await supabase('DELETE', `chat_messages?session_id=eq.${session_id}`);
       const result = await supabase(
@@ -209,16 +170,12 @@ export async function POST(req: Request) {
     // ── TOGGLE PIN SESSION ───────────────────────────────────
     if (action === 'toggle_pin_session') {
       const { session_id, is_pinned } = body;
-      if (!session_id) {
-        return NextResponse.json({ error: 'session_id required' }, { status: 400 });
-      }
+      if (!session_id || !user_id) return NextResponse.json({ error: 'session_id required' }, { status: 400 });
 
       const result = await supabase(
         'PATCH',
         `chat_sessions?id=eq.${session_id}&user_id=eq.${user_id}`,
-        {
-          is_pinned: !is_pinned,
-        }
+        { is_pinned: !is_pinned }
       );
 
       if (!result.ok) {
@@ -231,7 +188,7 @@ export async function POST(req: Request) {
     // ── UPDATE SESSION TITLE ─────────────────────────────────
     if (action === 'update_title') {
       const { session_id, title } = body;
-      if (!session_id || !title) {
+      if (!session_id || !title || !user_id) {
         return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
       }
 
