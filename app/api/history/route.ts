@@ -13,6 +13,7 @@ async function supabase(method: string, path: string, body?: any) {
       Prefer: method === 'POST' ? 'return=representation' : '',
     },
     body: body ? JSON.stringify(body) : undefined,
+    cache: 'no-store',
   });
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
         drug_name, manufacturer, batch_num, nafdac_num, expiry_date,
         storage, packaging, drug_form, source, observations, warnings,
         status, safety_score, summary, flags, recommendation, pro_tip, age_note,
+        evidence_url // <-- ADDED THIS
       } = body;
 
       const result = await supabase('POST', 'scan_history', {
@@ -38,6 +40,7 @@ export async function POST(req: Request) {
         storage, packaging, drug_form, source, observations,
         warnings: warnings || [], status, safety_score, summary,
         flags: flags || [], recommendation, pro_tip, age_note,
+        evidence_url // <-- ADDED THIS
       });
 
       if (!result.ok) {
@@ -61,6 +64,39 @@ export async function POST(req: Request) {
       }
 
       return NextResponse.json({ success: true, history: result.data || [] }, { status: 200 });
+    }
+
+    // ── ADMIN GET ALL REPORTS ────────────────────────────────
+    if (action === 'admin_get_reports') {
+      // NOTE: In production, verify Admin JWT token here for security!
+      
+      // URL encode the space as %20 to prevent fetch parsing stalls
+      const result = await supabase(
+        'GET',
+        `scan_history?drug_name=ilike.*REPORTED%20DEFECT*&order=created_at.desc&select=*`
+      );
+
+      if (!result.ok) {
+        return NextResponse.json({ error: 'Failed to fetch nationwide reports' }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, reports: result.data || [] }, { status: 200 });
+    }
+
+    // ── ADMIN UPDATE REPORT STATUS ───────────────────────────
+    if (action === 'admin_update_report') {
+      const { report_id, new_status } = body;
+      if (!report_id || !new_status) return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+
+      // We update the summary to reflect the new status to the user
+      const result = await supabase('PATCH', `scan_history?id=eq.${report_id}`, {
+        summary: `Admin Update: Report marked as ${new_status.toUpperCase()}`
+      });
+
+      if (!result.ok) {
+        return NextResponse.json({ error: 'Failed to update report status' }, { status: 500 });
+      }
+      return NextResponse.json({ success: true }, { status: 200 });
     }
 
     // ── DELETE SCAN ──────────────────────────────────────────

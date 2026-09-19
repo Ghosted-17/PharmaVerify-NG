@@ -33,6 +33,7 @@ function publicUser(user: any) {
     state: user.state,
     city: user.city,
     dob: user.dob,
+    role: user.role || 'user',
     avatar: user.avatar,
   };
 }
@@ -105,7 +106,7 @@ export async function POST(req: Request) {
       const { username } = body;
       const result = await supabase(
         'GET',
-        `users?username=eq.${encodeURIComponent(username.toLowerCase())}&select=firstname,lastname,username`
+        `users?username=eq.${encodeURIComponent(username.toLowerCase())}&select=id,firstname,lastname,username,avatar,role,email,phone,age,occupation,state,city,allergies,conditions`
       );
       if (!result.ok || !result.data || result.data.length === 0) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -120,7 +121,7 @@ export async function POST(req: Request) {
 
       const result = await supabase(
         'GET',
-        `users?id=eq.${id}&select=id,firstname,lastname,username,email,phone,age,occupation,state,city,avatar,dob`
+        `users?id=eq.${id}&select=id,firstname,lastname,username,email,phone,age,occupation,state,city,allergies,conditions,avatar,dob`
       );
       if (!result.ok || !result.data || result.data.length === 0) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -130,10 +131,10 @@ export async function POST(req: Request) {
 
     // ── UPDATE PROFILE ───────────────────────────────────────
     if (action === 'update') {
-      const { id, firstname, lastname, phone, occupation, state, city, email, age, avatar } = body;
+      const { id, firstname, lastname, phone, occupation, state, city, email, age, allergies, conditions, avatar } = body;
       if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
-      const update: any = { firstname, lastname, phone, occupation, state, city, email, age };
+      const update: any = { firstname, lastname, phone, occupation, state, city, email, age, allergies, conditions };
       if (avatar !== undefined) update.avatar = avatar;
 
       const result = await supabase('PATCH', `users?id=eq.${id}`, update);

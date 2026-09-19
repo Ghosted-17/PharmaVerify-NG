@@ -139,11 +139,9 @@ const DYK_TOPICS = [
 export default function DashboardPage() {
   const router = useRouter();
 
-  // Navigation & Drawer State
-  const [activeView, setActiveView] = useState<'overview' | 'verify' | 'interactions' | 'history' | 'analytics' | 'account' | 'assistant' | 'chat-history'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'verify' | 'report' | 'interactions' | 'history' | 'analytics' | 'account' | 'assistant' | 'chat-history'>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Auto-close sidebar on view change on mobile screens & persist active view
   const handleNavClick = (view: typeof activeView) => {
     setActiveView(view);
     if (typeof window !== 'undefined') {
@@ -161,14 +159,14 @@ export default function DashboardPage() {
   const [chartReady, setChartReady] = useState(false);
   const [period, setPeriod] = useState<'6m' | '3m' | '1m'>('6m');
 
-  // Notifications State
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [selectedNotif, setSelectedNotif] = useState<NotificationItem | null>(null);
 
-  // User Profile State
   const [user, setUser] = useState<any>({});
+  const [userRole, setUserRole] = useState<'user' | 'staff' | 'admin'>('user');
   const [profile, setProfile] = useState<{ [key: string]: string }>({
+    'pf-username': '',
     'pf-firstname': '',
     'pf-lastname': '',
     'pf-age': '',
@@ -184,7 +182,6 @@ export default function DashboardPage() {
   const [avatarModalOpen, setAvatarModalOpen] = useState(false);
   const [profileSavedToast, setProfileSavedToast] = useState(false);
 
-  // Avatar Cropper State
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [cropZoom, setCropZoom] = useState<number>(100);
   const cropViewportRef = useRef<HTMLDivElement>(null);
@@ -203,12 +200,10 @@ export default function DashboardPage() {
     startOffY: 0,
   });
 
-  // Did You Know State
   const [dykTip, setDykTip] = useState('Loading today’s medical tip...');
   const [dykMeta, setDykMeta] = useState('');
   const [dykLoading, setDykLoading] = useState(false);
 
-  // History State
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -218,6 +213,8 @@ export default function DashboardPage() {
   const PAGE_SIZE = 7;
 
   // Verification Form State
+  const [dvCategory, setDvCategory] = useState<'drug' | 'food' | 'water' | 'cosmetic' | 'device'>('drug');
+  const [dvDeviceType, setDvDeviceType] = useState(''); // For Medical Devices
   const [dvDrugName, setDvDrugName] = useState('');
   const [dvManufacturer, setDvManufacturer] = useState('');
   const [dvNafdacNum, setDvNafdacNum] = useState('');
@@ -225,6 +222,7 @@ export default function DashboardPage() {
   const [dvExpiryDate, setDvExpiryDate] = useState('');
   const [dvStorageTemp, setDvStorageTemp] = useState('');
   const [dvPackaging, setDvPackaging] = useState('');
+  const [dvWaterType, setDvWaterType] = useState('sachet'); // Water-specific parameter
   const [dvDrugForm, setDvDrugForm] = useState('');
   const [dvRouteAdmin, setDvRouteAdmin] = useState('');
   const [dvSource, setDvSource] = useState('');
@@ -233,10 +231,21 @@ export default function DashboardPage() {
   const [dvLoading, setDvLoading] = useState(false);
   const [dvResult, setDvResult] = useState<any>(null);
   const [dvError, setDvError] = useState('');
+  const [lastVerifiedName, setLastVerifiedName] = useState(''); // Holds name after clear
   const [nafdacCheckResult, setNafdacCheckResult] = useState<{ found: boolean; message?: string; greenbook_url?: string } | null>(null);
   const [nafdacFormatHint, setNafdacFormatHint] = useState<string>('');
 
-  // Chat State (PharmaBot)
+  const [repCategory, setRepCategory] = useState<'drug' | 'food' | 'water' | 'cosmetic' | 'device'>('drug');
+  const [repProductName, setRepProductName] = useState('');
+  const [repManufacturer, setRepManufacturer] = useState('');
+  const [repNafdacNum, setRepNafdacNum] = useState('');
+  const [repBatchNum, setRepBatchNum] = useState('');
+  const [repLocation, setRepLocation] = useState('');
+  const [repDescription, setRepDescription] = useState('');
+  const [repFile, setRepFile] = useState<File | null>(null);
+  const [repSubmitting, setRepSubmitting] = useState(false);
+  const [repSuccessMsg, setRepSuccessMsg] = useState(false);
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
@@ -244,17 +253,14 @@ export default function DashboardPage() {
   const [includeConditions, setIncludeConditions] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [chatSidebarCollapsed, setChatSidebarCollapsed] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  // Chart Instances
   const lineChartInst = useRef<any>(null);
   const donutChartInst = useRef<any>(null);
   const barChartInst = useRef<any>(null);
   const formChartInst = useRef<any>(null);
   const trendChartInst = useRef<any>(null);
 
-  // Drug Interaction Checker State
   const [interactionDrugs, setInteractionDrugs] = useState<string[]>(['', '']);
   const [interactionLoading, setInteractionLoading] = useState(false);
   const [doctorCertified, setDoctorCertified] = useState<{ [key: number]: boolean }>({});
@@ -294,7 +300,6 @@ export default function DashboardPage() {
       if (!res.ok) throw new Error(data.error || 'Check failed');
       setInteractionResult(data);
 
-      // Auto-save to Local Storage
       const newSavedItem: SavedInteractionItem = {
         id: String(Date.now()),
         date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
@@ -306,7 +311,9 @@ export default function DashboardPage() {
 
       const updatedHistory = [newSavedItem, ...savedInteractions.filter((it) => it.drugs.join(', ') !== valid.join(', '))].slice(0, 5);
       setSavedInteractions(updatedHistory);
-      localStorage.setItem('pv_interaction_history', JSON.stringify(updatedHistory));
+      if (user.id) {
+        localStorage.setItem(`pv_interaction_history_${user.id}`, JSON.stringify(updatedHistory));
+      }
     } catch (err: any) {
       alert(err.message || 'Error checking interactions');
     } finally {
@@ -327,10 +334,11 @@ export default function DashboardPage() {
     e.stopPropagation();
     const updated = savedInteractions.filter((i) => i.id !== id);
     setSavedInteractions(updated);
-    localStorage.setItem('pv_interaction_history', JSON.stringify(updated));
+    if (user.id) {
+      localStorage.setItem(`pv_interaction_history_${user.id}`, JSON.stringify(updated));
+    }
   };
 
-  // Initial Load & Auth Check
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -339,56 +347,65 @@ export default function DashboardPage() {
       return;
     }
 
-    // Restore active tab from URL or localStorage
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab') as typeof activeView;
     const savedTab = (localStorage.getItem('pv_active_view') as typeof activeView) || 'overview';
     const initialTab = tabParam || savedTab;
 
-    const validTabs: (typeof activeView)[] = ['overview', 'verify', 'interactions', 'history', 'analytics', 'account', 'assistant', 'chat-history'];
+    const validTabs: (typeof activeView)[] = ['overview', 'verify', 'report', 'interactions', 'history', 'analytics', 'account', 'assistant', 'chat-history'];
     if (validTabs.includes(initialTab)) {
       setActiveView(initialTab);
     }
 
-    const storedUser = JSON.parse(localStorage.getItem('pv_user') || '{}');
-    const storedProfile = JSON.parse(localStorage.getItem('pv_profile') || '{}');
+    async function loadUserData() {
+      const storedUser = JSON.parse(localStorage.getItem('pv_user') || '{}');
+      const userId = storedUser.id;
+      const storedProfile = JSON.parse(localStorage.getItem('pv_profile') || '{}');
 
-    const merged = {
-      'pf-firstname': storedProfile['pf-firstname'] || storedUser.firstname || '',
-      'pf-lastname': storedProfile['pf-lastname'] || storedUser.lastname || '',
-      'pf-age': storedProfile['pf-age'] || (storedUser.age != null ? String(storedUser.age) : ''),
-      'pf-occupation': storedProfile['pf-occupation'] || storedUser.occupation || '',
-      'pf-email': storedProfile['pf-email'] || storedUser.email || '',
-      'pf-phone': storedProfile['pf-phone'] || storedUser.phone || '',
-      'pf-state': storedProfile['pf-state'] || storedUser.state || '',
-      'pf-city': storedProfile['pf-city'] || storedUser.city || '',
-      'pf-allergies': storedProfile['pf-allergies'] || storedUser.allergies || '',
-      'pf-conditions': storedProfile['pf-conditions'] || storedUser.conditions || '',
-    };
+      const merged = {
+        'pf-username': storedProfile['pf-username'] || storedUser.username || '',
+        'pf-firstname': storedProfile['pf-firstname'] || storedUser.firstname || '',
+        'pf-lastname': storedProfile['pf-lastname'] || storedUser.lastname || '',
+        'pf-age': storedProfile['pf-age'] || (storedUser.age != null ? String(storedUser.age) : ''),
+        'pf-occupation': storedProfile['pf-occupation'] || storedUser.occupation || '',
+        'pf-email': storedProfile['pf-email'] || storedUser.email || '',
+        'pf-phone': storedProfile['pf-phone'] || storedUser.phone || '',
+        'pf-state': storedProfile['pf-state'] || storedUser.state || '',
+        'pf-city': storedProfile['pf-city'] || storedUser.city || '',
+        'pf-allergies': storedProfile['pf-allergies'] || storedUser.allergies || '',
+        'pf-conditions': storedProfile['pf-conditions'] || storedUser.conditions || '',
+      };
 
-    setUser(storedUser);
-    setProfile(merged);
-    if (storedUser.avatar) {
-      setAvatar(storedUser.avatar);
-    }
-
-    // Load saved interactions
-    try {
-      const storedInteractions = JSON.parse(localStorage.getItem('pv_interaction_history') || '[]');
-      if (Array.isArray(storedInteractions)) {
-        setSavedInteractions(storedInteractions);
+      setUser(storedUser);
+      setProfile(merged);
+      
+      const savedRole = localStorage.getItem('pv_dev_role') as 'user' | 'staff' | 'admin';
+      if (savedRole && ['user', 'staff', 'admin'].includes(savedRole)) {
+        setUserRole(savedRole);
       }
-    } catch {}
 
-    if (storedUser.id) {
-      fetch('/api/history', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get', user_id: storedUser.id }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && Array.isArray(data.history) && data.history.length > 0) {
+      if (storedUser.avatar) {
+        setAvatar(storedUser.avatar);
+      }
+
+      if (storedUser.id) {
+        localStorage.removeItem('pv_interaction_history');
+        try {
+          const storedInteractions = JSON.parse(localStorage.getItem(`pv_interaction_history_${storedUser.id}`) || '[]');
+          if (Array.isArray(storedInteractions)) {
+            setSavedInteractions(storedInteractions);
+          }
+        } catch {}
+
+        try {
+          const res = await fetch('/api/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'get', user_id: storedUser.id }),
+          });
+          const data = await res.json();
+          
+          if (data.success && Array.isArray(data.history)) {
             const mapped: HistoryRecord[] = data.history.map((r: any) => ({
               id: r.id,
               drugName: r.drug_name,
@@ -412,25 +429,26 @@ export default function DashboardPage() {
               date: r.created_at ? r.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
             }));
             setHistory(mapped);
-            localStorage.setItem('pv_history', JSON.stringify(mapped));
+            localStorage.setItem(`pv_history_${storedUser.id}`, JSON.stringify(mapped));
           } else {
-            const localHistory = JSON.parse(localStorage.getItem('pv_history') || '[]');
-            if (Array.isArray(localHistory) && localHistory.length > 0) setHistory(localHistory);
+            // Strictly check ONLY this user's scoped local storage key. No global fallback.
+            const userLocalHistory = JSON.parse(localStorage.getItem(`pv_history_${storedUser.id}`) || '[]');
+            setHistory(userLocalHistory);
           }
-        })
-        .catch(() => {
-          const localHistory = JSON.parse(localStorage.getItem('pv_history') || '[]');
-          if (Array.isArray(localHistory)) setHistory(localHistory);
-        });
+        } catch {
+          const userLocalHistory = JSON.parse(localStorage.getItem(`pv_history_${storedUser.id}`) || '[]');
+          setHistory(userLocalHistory);
+        }
 
-      loadChatSessions(storedUser.id);
-      loadNotifications(storedUser.id);
+        loadChatSessions(storedUser.id);
+        loadNotifications(storedUser.id);
+      }
     }
 
+    loadUserData();
     loadDykTip();
   }, [router]);
 
-  // Notifications
   const loadNotifications = async (userId: string) => {
     try {
       const res = await fetch('/api/notifications', {
@@ -457,7 +475,6 @@ export default function DashboardPage() {
     } catch {}
   };
 
-  // Clean raw Tip format
   const cleanTipText = (raw: string): string => {
     let text = raw.replace(/```json|```/g, '').trim();
     try {
@@ -516,7 +533,6 @@ Rules:
     }
   };
 
-  // Chat Session Methods
   const loadChatSessions = async (userId: string) => {
     try {
       const res = await fetch('/api/history', {
@@ -634,7 +650,9 @@ Rules:
 
     const updated = history.filter((r) => r.id !== id);
     setHistory(updated);
-    localStorage.setItem('pv_history', JSON.stringify(updated));
+    if (user.id) {
+      localStorage.setItem(`pv_history_${user.id}`, JSON.stringify(updated));
+    }
 
     if (user.id) {
       try {
@@ -672,7 +690,6 @@ Rules:
     }
   };
 
-  // Render Charts
   useEffect(() => {
     if (!chartReady || typeof window === 'undefined' || !window.Chart) return;
     if (activeView === 'overview') renderOverviewCharts();
@@ -849,7 +866,6 @@ Rules:
     return res;
   }
 
-  // Avatar Cropping Logic
   const handleAvatarFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -987,10 +1003,9 @@ Rules:
     }
   };
 
-  // Verification Form Handler
   const handleRunVerification = async () => {
     if (!dvDrugName.trim()) {
-      alert('Please enter a drug or medication name.');
+      alert('Please enter a product name.');
       return;
     }
 
@@ -1001,82 +1016,103 @@ Rules:
 
     const today = new Date();
     let expiryStatus = 'not provided';
-    if (dvExpiryDate) {
+    if (dvCategory !== 'water' && dvExpiryDate) {
       const exp = new Date(dvExpiryDate + '-01');
       const diff = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
-      expiryStatus =
-        diff < 0
-          ? `EXPIRED (${Math.abs(diff)} months ago)`
-          : diff === 0
-          ? 'expires this month'
-          : diff <= 3
-          ? `expires in ${diff} month(s) — soon`
-          : `valid for ${diff} months`;
+      expiryStatus = diff < 0 ? `EXPIRED (${Math.abs(diff)} months ago)` : diff === 0 ? 'expires this month' : diff <= 3 ? `expires in ${diff} month(s) — soon` : `valid for ${diff} months`;
+    } else if (dvCategory === 'water') {
+      expiryStatus = 'N/A for Packaged Water';
     }
 
     let nafdacContext = 'No NAFDAC number provided.';
-    if (dvNafdacNum || dvDrugName) {
+    let liveScrapedRecord = null;
+
+    if (dvNafdacNum) {
       try {
-        const nRes = await fetch('/api/nafdac', {
+        const scrapeRes = await fetch('/api/scrape-nafdac', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nrn: dvNafdacNum, drugName: dvDrugName, manufacturer: dvManufacturer }),
+          body: JSON.stringify({ nrn: dvNafdacNum }),
         });
-        const nData = await nRes.json();
-        setNafdacCheckResult(nData);
-        if (nData.found) {
-          nafdacContext = `NAFDAC DATABASE CHECK: ${nData.verdict}. Active ingredient: ${nData.record.activeIngredient}, Form: ${nData.record.form}, Manufacturer: ${nData.record.manufacturer}.`;
+        const scrapeData = await scrapeRes.json();
+        
+        if (scrapeData.found && scrapeData.record) {
+          liveScrapedRecord = scrapeData.record;
+          nafdacContext = `LIVE NAPAMS REGISTRY VERIFIED: Product Name: "${liveScrapedRecord.productName}", Category: "${liveScrapedRecord.category}", Manufacturer: "${liveScrapedRecord.manufacturer}", Active Ingredient: "${liveScrapedRecord.activeIngredient || 'Standard'}".`;
+          setNafdacCheckResult({ found: true, message: 'Verified on live NAFDAC portal' });
         } else {
-          nafdacContext = `NAFDAC DATABASE CHECK: NRN ${dvNafdacNum || 'N/A'} was not found in local verified database.`;
+          nafdacContext = `LIVE NAPAMS REGISTRY CHECK: NRN "${dvNafdacNum}" returned no active record on the official portal.`;
+          setNafdacCheckResult({ found: false, message: 'Record not found in live registry.' });
         }
       } catch {
-        setNafdacCheckResult({
-          found: false,
-          message: 'Local database check unavailable. Please verify manually on the Greenbook portal.',
-          greenbook_url: `https://greenbook.nafdac.gov.ng/?search=${encodeURIComponent(dvNafdacNum || dvDrugName)}`,
-        });
+        nafdacContext = 'Live NAPAMS portal lookup encountered a network timeout.';
+        setNafdacCheckResult({ found: false, message: 'Portal timeout' });
       }
     }
 
     const activeWarnings = dvWarnings.filter((w) => w !== 'none');
-    const isBulkDispensed = dvPackaging === 'dispensing_envelope';
-    const isTrustedSource = dvSource === 'pharmacy' || dvSource === 'hospital';
+    const isTrustedSource = dvSource === 'pharmacy' || dvSource === 'hospital' || dvSource === 'supermarket';
 
     let packagingRules = "";
-    if (isBulkDispensed) {
-      if (isTrustedSource) {
-        packagingRules = "SPECIAL BULK RULE: Drug is in a pharmacy/hospital dispensing envelope or ziplock. DO NOT penalize for missing NAFDAC or Expiry. Evaluate its safety naturally based on physical condition and source. Do NOT explicitly state 'it passed because of the envelope rule' — just write a professional, natural clinical summary indicating it appears safe for use while noting standard handling precautions.";
+    if (dvCategory === 'drug') {
+      if (dvPackaging === 'dispensing_envelope') {
+        packagingRules = isTrustedSource ? "SPECIAL BULK RULE: Drug is in a pharmacy dispensing envelope. Do not penalize for missing commercial box." : "SPECIAL BULK RULE: Loose packaging from an unverified source. Score as UNSAFE.";
       } else {
-        packagingRules = "SPECIAL BULK RULE: Drug is in loose packaging from an unverified source (open market/hawker). Score as UNSAFE. State clearly that buying loose medications outside of licensed pharmacies is hazardous.";
+        packagingRules = "STANDARD PACKAGING RULE: Evaluate commercial packaging normally.";
       }
-    } else {
-      packagingRules = "STANDARD PACKAGING RULE: Evaluate commercial packaging normally according to standard pharmacopeial safety.";
+    } else if (dvCategory === 'water') {
+      packagingRules = `WATER SAFETY RULE: Packaged water (${dvWaterType}) does not require batch/expiry numbers if the seal is intact. Focus purely on seal integrity and the NAFDAC registration match.`;
+    } else if (dvCategory === 'food') {
+      packagingRules = "FOOD SAFETY RULE: Swollen packaging, foul odor, or foreign objects = UNSAFE immediately.";
+    } else if (dvCategory === 'cosmetic') {
+      packagingRules = "COSMETIC SAFETY RULE: Banned peeling agents or foul odor = UNSAFE.";
+    } else if (dvCategory === 'device') {
+      packagingRules = `MEDICAL DEVICE RULE (Type: ${dvDeviceType}): IF "sterile" and packaging is opened/torn/damaged/moisture, score UNSAFE immediately (infection risk). IF "diagnostic" and expired, score UNSAFE (false results risk). IF "protection" and expired/yellowing, score UNSAFE (tearing risk).`;
     }
 
-    const prompt = `You are a pharmaceutical safety expert. User profile: ${profile['pf-occupation'] || 'Patient'}, age: ${profile['pf-age'] || 'unspecified'}. Known Allergies: ${profile['pf-allergies'] || 'None reported'}. Routine medications / conditions: ${profile['pf-conditions'] || 'None reported'}.
+    const combinedForm = dvRouteAdmin ? `${dvDrugForm} (${dvRouteAdmin})` : dvDrugForm;
+    const waterDetails = dvCategory === 'water' ? `\n- Water Container Type: ${dvWaterType}` : '';
+    const drugDetails = dvCategory === 'drug' ? `\n- Drug Form: ${dvDrugForm || 'Not provided'}\n- Route of Admin: ${dvRouteAdmin || 'Not provided'}` : '';
+    const deviceDetails = dvCategory === 'device' ? `\n- Device Classification: ${dvDeviceType || 'Not provided'}` : '';
 
-Analyse these medication details and return ONLY valid JSON:
-- Name: ${dvDrugName}
+    const prompt = `You are Adetutu, a warm and experienced Nigerian clinical pharmacist having a direct conversation with a patient or consumer. You grew up in Lagos and have worked at a community pharmacy for years. You speak plainly, warmly, and confidently.
+
+STRICT TONE RULES — NEVER BREAK THESE:
+1. Never use the words: "parameters", "integrity check", "algorithmic", "supply chain", "overt signs", "based on the provided", "given the information", "assessment indicates", or any robotic phrase.
+2. VARY YOUR VOCABULARY. Do NOT start every response the same way. Use a wide variety of natural, conversational openings (e.g., "Good news," "I've taken a look at this," "This looks perfectly fine," "I have to warn you," "Everything seems in order," etc.).
+3. If the category is water or food, never say "medication", "leaflet", "dose", or "administer". Just say drink, eat, consume.
+4. Use natural Nigerian English — warm and direct. Mix up your phrasing so it never sounds scripted or repetitive.
+5. Never repeat the product name more than once in the summary.
+6. Never mention JSON, parameters, or your own reasoning process.
+
+Product Details:
+- Category: ${dvCategory.toUpperCase()}
+- Product Name: ${dvDrugName}
 - Manufacturer: ${dvManufacturer || 'Not provided'}
-- Batch: ${dvBatchNum || 'Not provided'}
 - NAFDAC NRN: ${dvNafdacNum || 'Not provided'} (${nafdacContext})
-- Expiry: ${dvExpiryDate || 'Not provided'} (${expiryStatus})
+- Batch: ${dvCategory === 'water' ? 'N/A' : (dvBatchNum || 'Not provided')}
+- Expiry: ${dvCategory === 'water' ? 'N/A' : (dvExpiryDate || 'Not provided')} (${expiryStatus})
 - Storage: ${dvStorageTemp || 'Not provided'}
 - Packaging: ${dvPackaging || 'Not provided'}
-- Drug Form: ${dvDrugForm || 'Not provided'}
-- Route of Administration: ${dvRouteAdmin || 'Not provided'}
 - Source: ${dvSource || 'Not provided'}
 - Visual Observations: ${dvObservations || 'None'}
-- Warnings: ${activeWarnings.length ? activeWarnings.join(', ') : 'None'}
+- Warnings: ${activeWarnings.length ? activeWarnings.join(', ') : 'None'}${waterDetails}${drugDetails}${deviceDetails}
 
-Return ONLY valid JSON structure:
-{"status":"SAFE"|"CAUTION"|"UNSAFE"|"UNKNOWN","safetyScore":<0-100>,"summary":"<2-3 sentences providing a natural, professional clinical assessment without exposing underlying system rules>","flags":[{"type":"ok"|"warn"|"bad","message":"<specific finding>"}],"recommendation":"<clear actionable advice>","proTip":"<one expert tip>"}
+Return ONLY valid JSON — no markdown, no extra text:
+{
+  "status": "SAFE" | "CAUTION" | "UNSAFE" | "UNKNOWN",
+  "safetyScore": <0-100>,
+  "summary": "<2 warm, conversational sentences spoken directly to the user. Start naturally but use diverse vocabulary. DO NOT repetitively use the exact same opening phrase. Confirm the NAFDAC status and physical observations clearly but conversationally.>",
+  "flags": [{"type": "ok" | "warn" | "bad", "message": "<short, plain finding>"}],
+  "recommendation": "<One direct sentence advising what to do next in plain English.>",
+  "proTip": "<One short practical tip a real pharmacist would give>"
+}
 
 Rules:
-1. Expired = UNSAFE.
-2. Damaged packaging + physical changes = UNSAFE.
+1. If NAPAMS registry confirms registration and no red flags, status must be SAFE with score above 80.
+2. Expired product = UNSAFE always, score below 20.
 3. ${packagingRules}
-4. Always recommend consulting a licensed pharmacist or physician.`;
+4. If category is water or food and everything checks out, just confirm it is safe to consume — no medical language needed.`;
 
     try {
       const res = await fetch('/api/gemini', {
@@ -1090,20 +1126,20 @@ Rules:
       const last = clean.lastIndexOf('}');
       if (first !== -1 && last !== -1) clean = clean.substring(first, last + 1);
       const parsed = JSON.parse(clean);
+      
+      setLastVerifiedName(dvDrugName);
       setDvResult(parsed);
-
-      const combinedForm = dvRouteAdmin ? `${dvDrugForm} (${dvRouteAdmin})` : dvDrugForm;
 
       const newRec: HistoryRecord = {
         id: Date.now(),
         drugName: dvDrugName,
         manufacturer: dvManufacturer,
-        batchNum: dvBatchNum,
+        batchNum: dvCategory === 'water' ? 'N/A' : dvBatchNum,
         nafdacNum: dvNafdacNum,
-        expiryDate: dvExpiryDate,
+        expiryDate: dvCategory === 'water' ? 'N/A' : dvExpiryDate,
         storageTemp: dvStorageTemp,
         packaging: dvPackaging,
-        drugForm: combinedForm,
+        drugForm: dvCategory === 'drug' ? combinedForm : dvCategory.toUpperCase(),
         source: dvSource,
         observations: dvObservations,
         warnings: dvWarnings,
@@ -1118,7 +1154,25 @@ Rules:
 
       const updated = [newRec, ...history];
       setHistory(updated);
-      localStorage.setItem('pv_history', JSON.stringify(updated.slice(0, 100)));
+      if (user.id) {
+        localStorage.setItem(`pv_history_${user.id}`, JSON.stringify(updated.slice(0, 100)));
+      }
+
+      setDvDrugName('');
+      setDvManufacturer('');
+      setDvNafdacNum('');
+      setDvBatchNum('');
+      setDvExpiryDate('');
+      setDvStorageTemp('');
+      setDvPackaging('');
+      setDvWaterType('sachet');
+      setDvDeviceType('');
+      setDvDrugForm('');
+      setDvRouteAdmin('');
+      setDvSource('');
+      setDvObservations('');
+      setDvWarnings([]);
+      setNafdacFormatHint('');
 
       if (user.id) {
         fetch('/api/history', {
@@ -1127,17 +1181,17 @@ Rules:
           body: JSON.stringify({
             action: 'save',
             user_id: user.id,
-            drug_name: dvDrugName,
-            manufacturer: dvManufacturer,
-            batch_num: dvBatchNum,
-            nafdac_num: dvNafdacNum,
-            expiry_date: dvExpiryDate,
-            storage: dvStorageTemp,
-            packaging: dvPackaging,
-            drug_form: combinedForm,
-            source: dvSource,
-            observations: dvObservations,
-            warnings: dvWarnings,
+            drug_name: newRec.drugName,
+            manufacturer: newRec.manufacturer,
+            batch_num: newRec.batchNum,
+            nafdac_num: newRec.nafdacNum,
+            expiry_date: newRec.expiryDate,
+            storage: newRec.storageTemp,
+            packaging: newRec.packaging,
+            drug_form: newRec.drugForm,
+            source: newRec.source,
+            observations: newRec.observations,
+            warnings: newRec.warnings,
             status: parsed.status,
             safety_score: parsed.safetyScore,
             summary: parsed.summary,
@@ -1154,7 +1208,95 @@ Rules:
     }
   };
 
-  // PharmaBot Chat Handler
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!repProductName.trim() || !repDescription.trim()) {
+      alert('Please fill out the product name and description of the defect.');
+      return;
+    }
+    if (!repFile) {
+      alert('Mandatory Evidence: Please upload a photo or video showing the defect or counterfeit packaging.');
+      return;
+    }
+
+    setRepSubmitting(true);
+    try {
+      const base64Image = await fileToBase64(repFile);
+      
+      const reportName = `[REPORTED DEFECT] ${repProductName}`;
+      const summaryText = `Product defect reported in ${repLocation.toUpperCase()}. Status: Pending Admin Review & NAFDAC Escalation.`;
+      const recText = 'Our compliance team is reviewing your evidence. If verified, this batch will be flagged nationwide.';
+
+      const newReportRec: HistoryRecord = {
+        id: Date.now(),
+        drugName: reportName,
+        manufacturer: repManufacturer,
+        batchNum: repBatchNum,
+        nafdacNum: repNafdacNum,
+        source: repLocation,
+        observations: repDescription,
+        drugForm: repCategory.toUpperCase(),
+        status: 'UNSAFE',
+        safetyScore: 10,
+        summary: summaryText,
+        recommendation: recText,
+        date: new Date().toISOString().split('T')[0],
+      };
+
+      const updated = [newReportRec, ...history];
+      setHistory(updated);
+      if (user.id) {
+        localStorage.setItem(`pv_history_${user.id}`, JSON.stringify(updated));
+      }
+
+      if (user.id) {
+        await fetch('/api/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save',
+            user_id: user.id,
+            drug_name: reportName,
+            manufacturer: repManufacturer,
+            batch_num: repBatchNum,
+            nafdac_num: repNafdacNum,
+            source: repLocation,
+            observations: repDescription,
+            drug_form: repCategory.toUpperCase(),
+            status: 'UNSAFE',
+            safety_score: 10,
+            summary: summaryText,
+            recommendation: recText,
+            evidence_url: base64Image,
+          }),
+        }).catch((err) => console.error("Supabase Save Error:", err));
+      }
+
+      setRepSuccessMsg(true);
+      setRepProductName('');
+      setRepManufacturer('');
+      setRepNafdacNum('');
+      setRepBatchNum('');
+      setRepLocation('');
+      setRepDescription('');
+      setRepFile(null);
+      setTimeout(() => setRepSuccessMsg(false), 5000);
+    } catch {
+      alert('Error submitting report.');
+    } finally {
+      setRepSubmitting(false);
+    }
+  };
+
   const sendChatMessage = async (presetText?: string) => {
     const text = (presetText || chatInput).trim();
     if (!text) return;
@@ -1202,12 +1344,8 @@ User Profile: ${profile['pf-occupation'] || 'Patient'}, Age: ${profile['pf-age']
 Recent Checks: ${historySummary}.
 
 COMMUNICATION RULES:
-- Be concise, direct, and practical. Aim for 100–160 words total (never write essays or textbooks).
-- Do NOT use multiple levels of nested sub-bullets or excessive divider lines (---).
+- Be concise, direct, and practical. Aim for 100–160 words total.
 - Format with at most 1 short intro sentence, 3–4 bullet points, and 1 brief closing safety note.
-- Deliver the most critical clinical takeaway first. If it's an emergency, highlight immediate actions clearly.
-- Only mention NAFDAC verification, storage, or excipients if directly relevant to the user's specific query.
-- Use Nigerian clinical and brand contexts naturally where appropriate (e.g., Ventolin, Coartem, Paracetamol brands).
 - Tone: warm, authoritative, reassuring, and concise.`;
 
     try {
@@ -1240,7 +1378,6 @@ COMMUNICATION RULES:
     }
   };
 
-  // Profile Update
   const handleSaveProfile = async () => {
     if (!profile['pf-firstname']) {
       alert('First name is required.');
@@ -1258,6 +1395,7 @@ COMMUNICATION RULES:
           body: JSON.stringify({
             action: 'update',
             id: user.id,
+            username: profile['pf-username'],
             firstname: profile['pf-firstname'],
             lastname: profile['pf-lastname'],
             age: profile['pf-age'] ? parseInt(profile['pf-age']) : null,
@@ -1277,7 +1415,6 @@ COMMUNICATION RULES:
     setTimeout(() => setProfileSavedToast(false), 3000);
   };
 
-  // Filtered History
   const filteredHistory = history.filter((r) => {
     const q = searchQuery.toLowerCase();
     const matchQ = !q || r.drugName.toLowerCase().includes(q) || (r.manufacturer || '').toLowerCase().includes(q);
@@ -1336,120 +1473,39 @@ COMMUNICATION RULES:
           --ember:#f59e0b;--blood:#ef4444;--text:#e8f0ea;--text2:#9ab0a0;--text3:#5a7060;--white:#ffffff;
           --sidebar-w:240px;
         }
-        html,body{
-          font-family:'Epilogue',sans-serif;
-          background:var(--void);
-          color:var(--text);
-          min-height:100vh;
-          width:100% !important;
-          max-width:100vw !important;
-          overflow-x:hidden !important;
-          margin:0;
-          padding:0;
-        }
-        .topbar{
-          background:rgba(4,10,6,0.97);
-          border-bottom:1px solid var(--line);
-          padding:0 1.5rem;
-          height:60px;
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          position:sticky;
-          top:0;
-          z-index:600;
-          width:100% !important;
-          max-width:100vw !important;
-          box-sizing:border-box !important;
-        }
+        html,body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;width:100% !important;max-width:100vw !important;overflow-x:hidden !important;margin:0;padding:0}
+        .topbar{background:rgba(4,10,6,0.97);border-bottom:1px solid var(--line);padding:0 1.5rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:600;width:100% !important;max-width:100vw !important;box-sizing:border-box !important}
         .nav-logo{font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--white);display:flex;align-items:center;gap:8px;text-decoration:none}
         .logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--jade),var(--jade-dim));border-radius:8px;display:flex;align-items:center;justify-content:center}
-        
         .menu-toggle{width:36px;height:36px;border:1px solid var(--line2);border-radius:8px;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
         .menu-toggle:hover{border-color:var(--jade);color:var(--jade)}
-
         .user-pill{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 6px;background:var(--card);border:1px solid var(--line2);border-radius:30px;cursor:pointer}
         .user-avatar{width:26px;height:26px;background:var(--jade);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--void);overflow:hidden}
-
-        /* RETRACTABLE DRAWER SIDEBAR */
-        .layout{
-          display:flex;
-          min-height:calc(100vh - 60px);
-          position:relative;
-          width:100% !important;
-          max-width:100vw !important;
-          overflow-x:hidden !important;
-        }
-        .sidebar{
-          width:var(--sidebar-w);
-          background:var(--deep);
-          border-right:1px solid var(--line);
-          display:flex;
-          flex-direction:column;
-          position:fixed;
-          top:60px;
-          bottom:0;
-          left:0;
-          height:calc(100vh - 60px);
-          overflow-y:auto;
-          flex-shrink:0;
-          z-index:650;
-          transition:transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .sidebar.closed{
-          transform:translateX(-100%);
-        }
-        .sidebar-overlay{
-          display:none;
-          position:fixed;
-          inset:60px 0 0 0;
-          background:rgba(0,0,0,0.55);
-          backdrop-filter:blur(2px);
-          z-index:640;
-        }
-        .sidebar-overlay.show{
-          display:block;
-        }
-
-        .main{
-          flex:1;
-          padding:2rem 2.5rem;
-          overflow-y:auto;
-          overflow-x:hidden;
-          transition:margin-left 0.28s ease;
-          margin-left:var(--sidebar-w);
-          width:calc(100% - var(--sidebar-w));
-          min-width:0;
-          box-sizing:border-box !important;
-        }
-        .main.full-width{
-          margin-left:0 !important;
-          width:100% !important;
-          max-width:100% !important;
-        }
-
+        .layout{display:flex;min-height:calc(100vh - 60px);position:relative;width:100% !important;max-width:100vw !important;overflow-x:hidden !important}
+        .sidebar{width:var(--sidebar-w);background:var(--deep);border-right:1px solid var(--line);display:flex;flex-direction:column;position:fixed;top:60px;bottom:0;left:0;height:calc(100vh - 60px);overflow-y:auto;flex-shrink:0;z-index:650;transition:transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)}
+        .sidebar.closed{transform:translateX(-100%)}
+        .sidebar-overlay{display:none;position:fixed;inset:60px 0 0 0;background:rgba(0,0,0,0.55);backdrop-filter:blur(2px);z-index:640}
+        .sidebar-overlay.show{display:block}
+        .main{flex:1;padding:2rem 2.5rem;overflow-y:auto;overflow-x:hidden;transition:margin-left 0.28s ease;margin-left:var(--sidebar-w);width:calc(100% - var(--sidebar-w));min-width:0;box-sizing:border-box !important}
+        .main.full-width{margin-left:0 !important;width:100% !important;max-width:100% !important}
         .sidebar-section{padding:1.5rem 1rem 0.5rem;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
         .sidebar-nav{list-style:none;padding:0 0.75rem}
         .sidebar-nav li{margin-bottom:2px}
         .sidebar-nav a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;font-size:13.5px;font-weight:500;color:var(--text2);text-decoration:none;cursor:pointer;transition:all 0.15s}
         .sidebar-nav a:hover{background:rgba(255,255,255,0.06);color:var(--text)}
         .sidebar-nav a.active{background:var(--jade-pale);color:var(--jade);font-weight:600}
-
         .stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:2rem;width:100%}
         .stat-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;position:relative}
         .stat-num{font-family:'Fraunces',serif;font-size:32px;font-weight:700;line-height:1;color:var(--white)}
         .stat-label{font-size:12px;color:var(--text3);margin-top:5px;font-weight:500}
-
         .chart-row{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:2rem;width:100%}
         .chart-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.5rem;min-width:0}
         .chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
         .chart-head h3{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--white)}
         .chart-head p{font-size:12px;color:var(--text3);margin-top:2px}
-
         .period-tabs{display:flex;gap:4px}
         .period-tab{padding:4px 10px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;color:var(--text3);border:1px solid transparent}
         .period-tab.active{background:var(--jade-pale);color:var(--jade);border-color:rgba(0,201,122,0.2)}
-
         .history-wrap{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;width:100%}
         .history-toolbar{padding:1.25rem 1.5rem;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
         .table-responsive{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -1461,15 +1517,12 @@ COMMUNICATION RULES:
         .chip-safe{background:rgba(0,201,122,0.1);color:var(--jade);border:1px solid rgba(0,201,122,0.2)}
         .chip-caution{background:rgba(245,158,11,0.1);color:var(--ember);border:1px solid rgba(245,158,11,0.2)}
         .chip-unsafe{background:rgba(239,68,68,0.1);color:var(--blood);border:1px solid rgba(239,68,68,0.2)}
-
-        /* FORM PANEL STYLES */
         .dv-panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:2.5rem;position:relative;overflow:hidden;width:100%}
         .dv-panel::before{content:'';position:absolute;top:-80px;right:-80px;width:200px;height:200px;background:radial-gradient(circle,var(--jade-glow),transparent 70%);pointer-events:none}
         .dv-head{display:flex;align-items:center;gap:12px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--line)}
         .dv-head-icon{width:40px;height:40px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .dv-head h2{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--white);letter-spacing:-0.3px}
         .dv-head p{font-size:12.5px;color:var(--text3);margin-top:2px}
-        
         .field{display:flex;flex-direction:column;gap:6px}
         .field.full{grid-column:1/-1}
         .field label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
@@ -1478,22 +1531,18 @@ COMMUNICATION RULES:
         .field input::placeholder,.field textarea::placeholder{color:var(--text3)}
         .field textarea{resize:vertical;min-height:95px;line-height:1.6}
         .field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a7060' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer}
-
         .checks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
         .check-box{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text2);padding:9px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface);cursor:pointer;transition:all 0.15s;user-select:none}
         .check-box:hover{border-color:rgba(0,201,122,0.3);background:var(--jade-pale);color:var(--text)}
         .check-box input[type=checkbox]{width:15px;height:15px;accent-color:var(--jade);cursor:pointer;flex-shrink:0}
-
         .verify-btn{width:100%;margin-top:1.75rem;background:var(--jade);color:var(--void);border:none;border-radius:12px;padding:15px;font-family:'Fraunces',serif;font-size:16px;font-weight:700;letter-spacing:0.2px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all 0.2s}
         .verify-btn:hover{background:#00e68a;box-shadow:0 12px 36px rgba(0,201,122,0.35);transform:translateY(-1px)}
-
-        /* SIDEBAR IN VERIFY VIEW */
+        .verify-btn:disabled{background:var(--surface);color:var(--text3);cursor:not-allowed;box-shadow:none}
         .dv-aside{display:flex;flex-direction:column;gap:1.5rem;width:100%}
         .result-placeholder{background:var(--card);border:1px dashed var(--line2);border-radius:20px;padding:3rem 2rem;text-align:center;color:var(--text3)}
         .result-placeholder .ph-icon{width:56px;height:56px;background:var(--jade-pale);border:1px solid rgba(0,201,122,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem}
         .result-placeholder h3{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--text2);margin-bottom:0.5rem}
         .result-placeholder p{font-size:13px;line-height:1.65}
-
         .info-widget{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:1.5rem;width:100%}
         .info-widget h3{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--white);margin-bottom:1.25rem}
         .check-list{list-style:none;display:flex;flex-direction:column;gap:10px}
@@ -1501,9 +1550,7 @@ COMMUNICATION RULES:
         .cl-num{width:22px;height:22px;background:var(--jade);color:var(--void);border-radius:50%;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
         .warn-box{background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:14px 16px;font-size:12.5px;color:#d4a83a;line-height:1.65}
         .warn-box strong{display:block;font-family:'Fraunces',serif;font-size:13px;margin-bottom:3px;color:var(--ember)}
-
         .btn-jade{background:var(--jade);color:var(--void);border:none;border-radius:10px;padding:12px 24px;font-family:'Fraunces',serif;font-size:15px;font-weight:700;cursor:pointer}
-
         .chat-panel{background:var(--card);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-height:580px;width:100%}
         .chat-messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
         .msg{display:flex;gap:10px}
@@ -1511,152 +1558,39 @@ COMMUNICATION RULES:
         .msg-bubble{max-width:80%;padding:12px 16px;border-radius:14px;font-size:13.5px;line-height:1.6}
         .msg.ai .msg-bubble{background:var(--surface);border:1px solid var(--line);color:var(--text2)}
         .msg.user .msg-bubble{background:var(--jade);color:var(--void);font-weight:500}
-
         .chat-session-item{padding:8px 10px;border-radius:9px;cursor:pointer;transition:all 0.15s;border:1px solid transparent;position:relative}
         .chat-session-item:hover{background:rgba(255,255,255,0.06);border-color:var(--line)}
         .chat-session-item.active{background:var(--jade-pale);border-color:rgba(0,201,122,0.2)}
         .chat-session-actions{display:none;gap:4px;position:absolute;right:6px;top:50%;transform:translateY(-50%)}
         .chat-session-item:hover .chat-session-actions{display:flex}
         .cs-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;border-radius:4px;color:var(--text2)}
-
         .action-btn{padding:5px 12px;border-radius:7px;font-family:'Epilogue',sans-serif;font-size:12px;font-weight:600;border:1px solid var(--line2);background:transparent;color:var(--text2);cursor:pointer;transition:all 0.15s}
         .action-btn:hover{border-color:var(--jade);color:var(--jade)}
-
         .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:900;display:flex;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(4px)}
         .modal{background:var(--card);border:1px solid var(--line2);border-radius:20px;width:100%;max-width:540px;max-height:85vh;overflow-y:auto;padding:1.75rem}
+        .interactions-grid-wrap{display:grid;grid-template-columns:minmax(0, 1fr) 320px;gap:1.75rem;align-items:start;width:100%}
+        .interaction-actions-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 
-        .interactions-grid-wrap {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 320px;
-          gap: 1.75rem;
-          align-items: start;
-          width: 100%;
-        }
-        .interaction-actions-row {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-        }
-
-        /* ═══ MOBILE FIXES & HORIZONTAL SCROLL SNAP (< 900px) ═══ */
         @media(max-width:900px){
-          .topbar{
-            padding:0 0.75rem !important;
-            width:100% !important;
-            max-width:100vw !important;
-            overflow-x:auto !important;
-            overflow-y:hidden !important;
-            white-space:nowrap !important;
-            -webkit-overflow-scrolling:touch !important;
-            scrollbar-width:none !important;
-            gap:10px !important;
-            justify-content:flex-start !important;
-          }
+          .topbar{padding:0 0.75rem !important;width:100% !important;max-width:100vw !important;overflow-x:auto !important;overflow-y:hidden !important;white-space:nowrap !important;scrollbar-width:none !important;gap:10px !important;justify-content:flex-start !important}
           .topbar::-webkit-scrollbar{display:none !important}
-          .topbar > div{flex-shrink:0 !important}
-
           .nav-subtitle{display:none !important}
-          
-          .layout{
-            display:block !important;
-            width:100% !important;
-            max-width:100vw !important;
-            overflow-x:hidden !important;
-          }
-
-          .main{
-            display:block !important;
-            padding:1.25rem 1rem !important;
-            margin-left:0 !important;
-            width:100% !important;
-            max-width:100vw !important;
-            box-sizing:border-box !important;
-            overflow-x:hidden !important;
-          }
-
-          .main > div{
-            width:100% !important;
-            max-width:100% !important;
-            box-sizing:border-box !important;
-          }
-          
-          .sidebar{
-            position:fixed !important;
-            top:60px !important;
-            bottom:0 !important;
-            left:0 !important;
-            z-index:700 !important;
-            transform:translateX(-100%);
-          }
-          .sidebar:not(.closed){
-            transform:translateX(0) !important;
-          }
-
-          /* Stat Cards Sideways Scroll Carousel */
-          .stat-grid{
-            display:flex !important;
-            flex-direction:row !important;
-            overflow-x:auto !important;
-            scroll-snap-type:x mandatory !important;
-            -webkit-overflow-scrolling:touch !important;
-            gap:12px !important;
-            padding-bottom:10px !important;
-            margin-left:-1rem !important;
-            margin-right:-1rem !important;
-            padding-left:1rem !important;
-            padding-right:1rem !important;
-            scrollbar-width:none !important;
-            width:calc(100% + 2rem) !important;
-          }
+          .layout{display:block !important;width:100% !important;max-width:100vw !important;overflow-x:hidden !important}
+          .main{display:block !important;padding:1.25rem 1rem !important;margin-left:0 !important;width:100% !important;max-width:100vw !important;box-sizing:border-box !important}
+          .sidebar{position:fixed !important;top:60px !important;bottom:0 !important;left:0 !important;z-index:700 !important;transform:translateX(-100%)}
+          .sidebar:not(.closed){transform:translateX(0) !important}
+          .stat-grid{display:flex !important;flex-direction:row !important;overflow-x:auto !important;scroll-snap-type:x mandatory !important;gap:12px !important;padding-bottom:10px !important;margin-left:-1rem !important;margin-right:-1rem !important;padding-left:1rem !important;padding-right:1rem !important;scrollbar-width:none !important;width:calc(100% + 2rem) !important}
           .stat-grid::-webkit-scrollbar{display:none}
-          .stat-card{
-            flex:0 0 72% !important;
-            max-width:72% !important;
-            scroll-snap-align:start !important;
-            min-width:200px !important;
-          }
-
-          /* Convert all multi-column layouts to stack cleanly */
-          .chart-row,
-          .assistant-grid,
-          .interactions-grid-wrap,
-          div[style*="gridTemplateColumns: '1fr 380px'"],
-          div[style*="grid-template-columns: 1fr 380px"],
-          div[style*="gridTemplateColumns: 'minmax(0, 1fr) 320px'"],
-          div[style*="grid-template-columns: minmax(0, 1fr) 320px"],
-          div[style*="gridTemplateColumns: '1fr 1fr'"],
-          div[style*="grid-template-columns: 1fr 1fr"],
-          div[style*="gridTemplateColumns: '280px 1fr'"],
-          div[style*="grid-template-columns: 280px 1fr"] {
-            display:flex !important;
-            flex-direction:column !important;
-            grid-template-columns:1fr !important;
-            width:100% !important;
-            gap:1.25rem !important;
-          }
-
-          .interaction-actions-row {
-            flex-direction:column !important;
-            align-items:stretch !important;
-            gap:10px !important;
-          }
-          .interaction-actions-row button {
-            width:100% !important;
-            text-align:center !important;
-          }
-
+          .stat-card{flex:0 0 72% !important;max-width:72% !important;scroll-snap-align:start !important;min-width:200px !important}
+          .chart-row,.assistant-grid,.interactions-grid-wrap,.report-grid-wrap,div[style*="gridTemplateColumns"],div[style*="grid-template-columns"]{display:flex !important;flex-direction:column !important;grid-template-columns:1fr !important;width:100% !important;gap:1.25rem !important}
           .dv-panel{padding:1.5rem 1.25rem !important}
           .checks{grid-template-columns:1fr !important}
           .chat-panel{min-height:500px !important}
         }
       `}</style>
 
-      {/* TOPBAR */}
       <header className="topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* HAMBURGER DRAWER BUTTON */}
           <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} title="Toggle Navigation Sidebar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
@@ -1671,11 +1605,28 @@ COMMUNICATION RULES:
             </div>
             PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup>
           </Link>
-          <span className="nav-subtitle" style={{ fontSize: 13, color: 'var(--text3)' }}>My Dashboard</span>
+          <span className="nav-subtitle" style={{ fontSize: 13, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            My Dashboard
+            <span
+              style={{ fontSize: 9, color: 'var(--ember)', cursor: 'pointer', padding: '2px 6px', border: '1px dashed var(--ember)', borderRadius: 4, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 }}
+              onClick={() => {
+                const newRole = prompt('Switch Role To (user / staff / admin):', userRole);
+                if (newRole && ['user', 'staff', 'admin'].includes(newRole.trim().toLowerCase())) {
+                  const role = newRole.trim().toLowerCase();
+                  localStorage.setItem('pv_dev_role', role);
+                  setUserRole(role as any);
+                  if (role === 'admin' || role === 'staff') {
+                    router.push('/admin');
+                  }
+                }
+              }}
+            >
+              Dev: {userRole}
+            </span>
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* NOTIFICATION BELL */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setNotifOpen(!notifOpen)}
@@ -1692,7 +1643,6 @@ COMMUNICATION RULES:
               )}
             </button>
 
-            {/* NOTIFICATIONS POPOVER */}
             {notifOpen && (
               <div style={{ position: 'fixed', top: 64, right: 16, width: 'min(380px, calc(100vw - 2rem))', maxHeight: '80vh', background: 'var(--card)', border: '1px solid var(--line2)', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.5)', zIndex: 750, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card)' }}>
@@ -1742,7 +1692,7 @@ COMMUNICATION RULES:
               )}
             </div>
             <span style={{ fontSize: 13, fontWeight: 600 }}>
-              {profile['pf-firstname'] ? `@${profile['pf-firstname'].toLowerCase()}` : '@user'}
+              {profile['pf-username'] ? `@${profile['pf-username'].replace(/^@/, '').toLowerCase()}` : '@user'}
             </span>
           </div>
 
@@ -1753,86 +1703,24 @@ COMMUNICATION RULES:
       </header>
 
       <div className="layout">
-        {/* MOBILE OVERLAY */}
         <div className={`sidebar-overlay ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebarOpen(false)} />
 
-        {/* DRAWER SIDEBAR */}
         <aside className={`sidebar ${!sidebarOpen ? 'closed' : ''}`}>
           <div className="sidebar-section">Main</div>
           <ul className="sidebar-nav">
-            <li>
-              <a className={activeView === 'overview' ? 'active' : ''} onClick={() => handleNavClick('overview')}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
-                Overview
-              </a>
-            </li>
-            <li>
-              <a className={activeView === 'verify' ? 'active' : ''} onClick={() => handleNavClick('verify')}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                Verify Drug
-              </a>
-            </li>
-            <li>
-              <a className={activeView === 'interactions' ? 'active' : ''} onClick={() => handleNavClick('interactions')}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M10.5 6h-6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-6" />
-                  <path d="M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Drug Interactions
-              </a>
-            </li>
-            <li>
-              <a className={activeView === 'history' ? 'active' : ''} onClick={() => handleNavClick('history')}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                Scan History
-              </a>
-            </li>
-            <li>
-              <a className={activeView === 'analytics' ? 'active' : ''} onClick={() => handleNavClick('analytics')}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10M12 20V4M6 20v-6" /></svg>
-                Analytics
-              </a>
-            </li>
+            <li><a className={activeView === 'overview' ? 'active' : ''} onClick={() => handleNavClick('overview')}>📊 Overview</a></li>
+            <li><a className={activeView === 'verify' ? 'active' : ''} onClick={() => handleNavClick('verify')}>🛡️ Verify Product</a></li>
+            <li><a className={activeView === 'report' ? 'active' : ''} onClick={() => handleNavClick('report')}>🚨 Report Defect</a></li>
+            <li><a className={activeView === 'interactions' ? 'active' : ''} onClick={() => handleNavClick('interactions')}>⚡ Drug Interactions</a></li>
+            <li><a className={activeView === 'history' ? 'active' : ''} onClick={() => handleNavClick('history')}>📂 Scan History</a></li>
+            <li><a className={activeView === 'analytics' ? 'active' : ''} onClick={() => handleNavClick('analytics')}>📈 Analytics</a></li>
           </ul>
 
           <div className="sidebar-section">Account</div>
           <ul className="sidebar-nav">
-            <li>
-              <a className={activeView === 'account' ? 'active' : ''} onClick={() => handleNavClick('account')}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                My Profile
-              </a>
-            </li>
-            <li>
-              <a className={activeView === 'assistant' ? 'active' : ''} onClick={() => handleNavClick('assistant')}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
-                AI Assistant
-              </a>
-              <ul style={{ listStyle: 'none', paddingLeft: '1.75rem', marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                <li>
-                  <a
-                    className={activeView === 'chat-history' ? 'active' : ''}
-                    onClick={() => handleNavClick('chat-history')}
-                    style={{
-                      fontSize: '12px',
-                      color: activeView === 'chat-history' ? 'var(--jade, #00c97a)' : 'var(--text3, #6b7280)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                    }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    Chat History
-                  </a>
-                </li>
-              </ul>
-            </li>
+            <li><a className={activeView === 'account' ? 'active' : ''} onClick={() => handleNavClick('account')}>⚙️ My Profile</a></li>
+            <li><a className={activeView === 'assistant' ? 'active' : ''} onClick={() => handleNavClick('assistant')}>🤖 AI Assistant</a></li>
+            <li><a className={activeView === 'chat-history' ? 'active' : ''} onClick={() => handleNavClick('chat-history')}>💬 Chat History</a></li>
           </ul>
 
           <div style={{ marginTop: 'auto', padding: '1rem', borderTop: '1px solid var(--line)' }}>
@@ -1840,6 +1728,9 @@ COMMUNICATION RULES:
               onClick={() => {
                 if (confirm('Sign out of PharmaVerify NG?')) {
                   localStorage.removeItem('pv_logged_in');
+                  localStorage.removeItem('pv_user');
+                  localStorage.removeItem('pv_profile');
+                  localStorage.removeItem('pv_active_view');
                   router.push('/signin');
                 }
               }}
@@ -1850,9 +1741,7 @@ COMMUNICATION RULES:
           </div>
         </aside>
 
-        {/* MAIN BODY AREA */}
         <main className={`main ${!sidebarOpen ? 'full-width' : ''}`}>
-          {/* ═════════ VIEW 1: OVERVIEW ═════════ */}
           {activeView === 'overview' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
@@ -1869,7 +1758,6 @@ COMMUNICATION RULES:
                 </button>
               </div>
 
-              {/* DID YOU KNOW WITH REFRESH */}
               <div style={{ background: 'var(--jade-pale)', border: '1px solid rgba(0,201,122,0.2)', padding: '1.25rem 1.5rem', borderRadius: 16, marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: 14, position: 'relative' }}>
                 <div style={{ width: 40, height: 40, background: 'var(--jade)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
                   💡
@@ -1887,10 +1775,7 @@ COMMUNICATION RULES:
                 <button
                   onClick={() => loadDykTip(true)}
                   disabled={dykLoading}
-                  title="Get another random tip"
-                  style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 18, padding: 4, transition: 'all 0.2s', lineHeight: 1 }}
-                  onMouseOver={(e) => (e.currentTarget.style.color = 'var(--jade)')}
-                  onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text3)')}
+                  style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 18 }}
                 >
                   ↻
                 </button>
@@ -1903,15 +1788,15 @@ COMMUNICATION RULES:
                 </div>
                 <div className="stat-card">
                   <div className="stat-num" style={{ color: 'var(--jade)' }}>{safeScans}</div>
-                  <div className="stat-label">Safe Results ({totalScans ? Math.round((safeScans / totalScans) * 100) : 0}%)</div>
+                  <div className="stat-label">Safe Results</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-num" style={{ color: 'var(--ember)' }}>{cautionScans}</div>
-                  <div className="stat-label">Caution Flags ({totalScans ? Math.round((cautionScans / totalScans) * 100) : 0}%)</div>
+                  <div className="stat-label">Caution Flags</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-num" style={{ color: 'var(--blood)' }}>{unsafeScans}</div>
-                  <div className="stat-label">Unsafe Detected ({totalScans ? Math.round((unsafeScans / totalScans) * 100) : 0}%)</div>
+                  <div className="stat-label">Unsafe Detected</div>
                 </div>
               </div>
 
@@ -1947,17 +1832,6 @@ COMMUNICATION RULES:
                       <div style={{ fontSize: 10, color: 'var(--text3)' }}>total</div>
                     </div>
                   </div>
-                  <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text2)' }}>
-                      <span>🟢 Safe</span> <strong>{safeScans}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text2)' }}>
-                      <span>🟡 Caution</span> <strong>{cautionScans}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text2)' }}>
-                      <span>🔴 Unsafe</span> <strong>{unsafeScans}</strong>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -1972,7 +1846,7 @@ COMMUNICATION RULES:
                   <table>
                     <thead>
                       <tr>
-                        <th>Drug</th>
+                        <th>Product</th>
                         <th>Result</th>
                         <th>Score</th>
                         <th>Source</th>
@@ -1993,12 +1867,8 @@ COMMUNICATION RULES:
                           <td style={{ color: 'var(--text3)' }}>{r.date}</td>
                           <td>
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                              <button className="action-btn" onClick={(e) => { e.stopPropagation(); setSelectedRecord(r); }}>
-                                View
-                              </button>
-                              <button className="action-btn" style={{ color: 'var(--blood)', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => handleDeleteRecord(r.id, e)}>
-                                Delete
-                              </button>
+                              <button className="action-btn" onClick={(e) => { e.stopPropagation(); setSelectedRecord(r); }}>View</button>
+                              <button className="action-btn" style={{ color: 'var(--blood)', borderColor: 'rgba(239,68,68,0.2)' }} onClick={(e) => handleDeleteRecord(r.id, e)}>Delete</button>
                             </div>
                           </td>
                         </tr>
@@ -2006,7 +1876,7 @@ COMMUNICATION RULES:
                       {history.length === 0 && (
                         <tr>
                           <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text3)' }}>
-                            No verifications run yet. Click &quot;Verify Drug&quot; to test a medication.
+                            No verifications run yet. Click &quot;Verify Product&quot; to test an item.
                           </td>
                         </tr>
                       )}
@@ -2017,11 +1887,9 @@ COMMUNICATION RULES:
             </div>
           )}
 
-          {/* ═════════ VIEW 2: VERIFY DRUG ═════════ */}
           {activeView === 'verify' && (
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '2rem' }}>
-                {/* LEFT: DRUG VERIFICATION FORM PANEL */}
                 <div className="dv-panel">
                   <div className="dv-head">
                     <div className="dv-head-icon">
@@ -2030,28 +1898,35 @@ COMMUNICATION RULES:
                       </svg>
                     </div>
                     <div>
-                      <h2>Drug Verification Form</h2>
+                      <h2>Product Verification Form</h2>
                       <p>Complete all fields for the most accurate assessment</p>
                     </div>
                   </div>
 
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '1.5rem', background: 'var(--surface)', padding: '6px', borderRadius: '12px', flexWrap: 'wrap' }}>
+                    <button onClick={() => { setDvCategory('drug'); setDvWarnings([]); }} style={{ flex: 1, minWidth: '90px', padding: '10px 6px', borderRadius: '8px', border: 'none', background: dvCategory === 'drug' ? 'var(--jade)' : 'transparent', color: dvCategory === 'drug' ? 'var(--void)' : 'var(--text2)', fontWeight: 700, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s' }}>💊 Medication</button>
+                    <button onClick={() => { setDvCategory('food'); setDvWarnings([]); }} style={{ flex: 1, minWidth: '90px', padding: '10px 6px', borderRadius: '8px', border: 'none', background: dvCategory === 'food' ? 'var(--jade)' : 'transparent', color: dvCategory === 'food' ? 'var(--void)' : 'var(--text2)', fontWeight: 700, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s' }}>🧃 Food / Bev</button>
+                    <button onClick={() => { setDvCategory('water'); setDvWarnings([]); }} style={{ flex: 1, minWidth: '90px', padding: '10px 6px', borderRadius: '8px', border: 'none', background: dvCategory === 'water' ? 'var(--jade)' : 'transparent', color: dvCategory === 'water' ? 'var(--void)' : 'var(--text2)', fontWeight: 700, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s' }}>💧 Water</button>
+                    <button onClick={() => { setDvCategory('cosmetic'); setDvWarnings([]); }} style={{ flex: 1, minWidth: '90px', padding: '10px 6px', borderRadius: '8px', border: 'none', background: dvCategory === 'cosmetic' ? 'var(--jade)' : 'transparent', color: dvCategory === 'cosmetic' ? 'var(--void)' : 'var(--text2)', fontWeight: 700, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s' }}>💄 Cosmetics</button>
+                    <button type="button" onClick={() => { setDvCategory('device'); setDvWarnings([]); }} style={{ flex: 1, minWidth: '90px', padding: '10px 6px', borderRadius: '8px', border: 'none', background: dvCategory === 'device' ? 'var(--jade)' : 'transparent', color: dvCategory === 'device' ? 'var(--void)' : 'var(--text2)', fontWeight: 700, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s' }}>🩺 Devices</button>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                     <div className="field">
-                      <label>DRUG / MEDICATION NAME *</label>
-                      <input type="text" placeholder="e.g. Paracetamol 500mg" value={dvDrugName} onChange={(e) => setDvDrugName(e.target.value)} />
+                      <label>{dvCategory === 'drug' ? 'DRUG / MEDICATION NAME *' : dvCategory === 'food' ? 'FOOD / BEVERAGE NAME *' : dvCategory === 'water' ? 'BRAND NAME (WATER) *' : dvCategory === 'device' ? 'DEVICE / SUPPLY NAME *' : 'COSMETIC PRODUCT NAME *'}</label>
+                      <input type="text" placeholder={dvCategory === 'drug' ? "e.g. Paracetamol 500mg" : dvCategory === 'food' ? "e.g. Nutri-Milk, Gala" : dvCategory === 'water' ? "e.g. Eva Water, Pure Water" : dvCategory === 'device' ? "e.g. 5ml Syringe, Durex Condom, RDT Kit" : "e.g. Fair & White"} value={dvDrugName} onChange={(e) => setDvDrugName(e.target.value)} />
                     </div>
                     <div className="field">
                       <label>MANUFACTURER / BRAND</label>
-                      <input type="text" placeholder="e.g. Emzor, GSK, Pfizer" value={dvManufacturer} onChange={(e) => setDvManufacturer(e.target.value)} />
+                      <input type="text" placeholder="e.g. Emzor, Unilever, Nestlé" value={dvManufacturer} onChange={(e) => setDvManufacturer(e.target.value)} />
                     </div>
 
-                    {/* NAFDAC REGISTRATION NUMBER ROW */}
                     <div className="field" style={{ gridColumn: '1/-1' }}>
-                      <label>NAFDAC REGISTRATION NUMBER</label>
+                      <label>NAFDAC REGISTRATION NUMBER (NRN)</label>
                       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                         <input
                           type="text"
-                          placeholder="e.g. A4-0123 or 04-5808"
+                          placeholder="e.g. A4-0123 or B1-4580"
                           value={dvNafdacNum}
                           onChange={(e) => {
                             const val = e.target.value.trim().toUpperCase();
@@ -2062,32 +1937,22 @@ COMMUNICATION RULES:
                             }
                             const valid = /^([A-Z]\d{1,2}|\d{2})-\d{4,7}$/.test(val);
                             if (valid) {
-                              const prefixMap: { [key: string]: string } = {
-                                A4: 'Imported drug',
-                                B4: 'Biologic/vaccine',
-                                '04': 'Locally manufactured',
-                                C4: 'Cosmetic',
-                                D4: 'Medical device',
-                                E4: 'Herbal/nutraceutical',
-                              };
-                              const prefix = val.split('-')[0];
-                              setNafdacFormatHint(`✓ Valid format — ${prefixMap[prefix] || 'Registered product'}`);
+                              setNafdacFormatHint(`✓ Valid NRN format`);
                             } else {
-                              setNafdacFormatHint('⚠ Standard format: A4-XXXX, 04-XXXX, B4-XXXX, etc.');
+                              setNafdacFormatHint('⚠ Standard format: A4-XXXX, B1-XXXX, C4-XXXX, etc.');
                             }
                           }}
                         />
                         <button
                           type="button"
                           onClick={() => {
-                            const query = dvNafdacNum || dvDrugName;
-                            window.open(`https://greenbook.nafdac.gov.ng/?search=${encodeURIComponent(query || '')}`, '_blank');
+                            // Opens the official NAPAMS verification portal
+                            window.open('https://registration.nafdac.gov.ng/#verify', '_blank');
                           }}
                           className="action-btn"
                           style={{ whiteSpace: 'nowrap', padding: '11px 16px', height: '100%', borderRadius: 10 }}
-                          title="Open NAFDAC Greenbook database"
                         >
-                          Greenbook ↗
+                          NAPAMS ↗
                         </button>
                       </div>
                       {nafdacFormatHint && (
@@ -2097,25 +1962,91 @@ COMMUNICATION RULES:
                       )}
                     </div>
 
-                    <div className="field">
-                      <label>BATCH / LOT NUMBER</label>
-                      <input type="text" placeholder="e.g. BTX-2023-441" value={dvBatchNum} onChange={(e) => setDvBatchNum(e.target.value)} />
-                    </div>
-                    <div className="field">
-                      <label>EXPIRY DATE</label>
-                      <input type="month" value={dvExpiryDate} onChange={(e) => setDvExpiryDate(e.target.value)} />
-                    </div>
+                    {dvCategory === 'water' && (
+                      <div className="field full" style={{ background: 'rgba(0,201,122,0.04)', padding: '12px', borderRadius: 10, border: '1px solid rgba(0,201,122,0.15)' }}>
+                        <label style={{ color: 'var(--jade)' }}>WATER CONTAINER TYPE</label>
+                        <select value={dvWaterType} onChange={(e) => setDvWaterType(e.target.value)}>
+                          <option value="sachet">Sachet Water (Pure Water)</option>
+                          <option value="bottled">Bottled Water</option>
+                          <option value="dispenser">Dispenser Jar / Refill Bottle</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {dvCategory !== 'water' && (
+                      <>
+                        <div className="field">
+                          <label>BATCH / LOT NUMBER</label>
+                          <input type="text" placeholder="e.g. BTX-2023-441" value={dvBatchNum} onChange={(e) => setDvBatchNum(e.target.value)} />
+                        </div>
+                        <div className="field">
+                          <label>EXPIRY DATE</label>
+                          <input type="month" value={dvExpiryDate} onChange={(e) => setDvExpiryDate(e.target.value)} />
+                        </div>
+                      </>
+                    )}
+
+                    {dvCategory === 'device' && (
+                      <div className="field full" style={{ background: 'rgba(0,201,122,0.04)', padding: '12px', borderRadius: 10, border: '1px solid rgba(0,201,122,0.15)' }}>
+                        <label style={{ color: 'var(--jade)' }}>DEVICE / SUPPLY CLASSIFICATION</label>
+                        <select value={dvDeviceType} onChange={(e) => setDvDeviceType(e.target.value)}>
+                          <option value="">Select classification</option>
+                          <option value="sterile">Sterile / Invasive (Syringes, IV sets, Cannulas)</option>
+                          <option value="protection">Protection / Intimate (Condoms, Gloves, Lubricants)</option>
+                          <option value="hygiene">Hygiene / Wound Care (Diapers, Pads, Cotton, Gauze)</option>
+                          <option value="diagnostic">Diagnostic / Testing (Pregnancy kits, Malaria RDT, Glucometer)</option>
+                          <option value="orthopedic">Orthopedic / Support (Crepe bandages, Braces)</option>
+                        </select>
+                      </div>
+                    )}
+
                     <div className="field">
                       <label>STORAGE CONDITION</label>
                       <select value={dvStorageTemp} onChange={(e) => setDvStorageTemp(e.target.value)}>
-                        <option value="">Select storage type</option>
-                        <option value="room">Room temperature (15–25°C)</option>
-                        <option value="cool">Cool / Dry (8–15°C)</option>
-                        <option value="refrigerated">Refrigerated (2–8°C)</option>
-                        <option value="frozen">Frozen (below 0°C)</option>
-                        <option value="hot">Exposed to heat / sunlight</option>
-                        <option value="humid">Humid environment</option>
-                        <option value="unknown">Unknown</option>
+                        <option value="">Select storage condition</option>
+                        {dvCategory === 'drug' && (
+                          <>
+                            <option value="Room temperature (15–25°C)">Room temperature (15–25°C)</option>
+                            <option value="Cool / Dry (8–15°C)">Cool / Dry (8–15°C)</option>
+                            <option value="Refrigerated (2–8°C)">Refrigerated (2–8°C)</option>
+                            <option value="Frozen (below 0°C)">Frozen (below 0°C)</option>
+                            <option value="Exposed to heat / sunlight">Exposed to heat / sunlight</option>
+                            <option value="Humid environment">Humid environment</option>
+                          </>
+                        )}
+                        {dvCategory === 'food' && (
+                          <>
+                            <option value="Dry shelf / Pantry">Dry shelf / Pantry</option>
+                            <option value="Refrigerated (Cold)">Refrigerated (Cold)</option>
+                            <option value="Frozen">Frozen</option>
+                            <option value="Exposed to heat / direct sun">Exposed to heat / direct sun</option>
+                            <option value="Damp / Wet environment">Damp / Wet environment</option>
+                          </>
+                        )}
+                        {dvCategory === 'water' && (
+                          <>
+                            <option value="Shaded / Room temperature">Shaded / Room temperature</option>
+                            <option value="Chilled / Refrigerated">Chilled / Refrigerated</option>
+                            <option value="Exposed to direct sunlight (Hot plastic)">Exposed to direct sunlight (Hot plastic)</option>
+                          </>
+                        )}
+                        {dvCategory === 'cosmetic' && (
+                          <>
+                            <option value="Cool / Dry room">Cool / Dry room</option>
+                            <option value="Exposed to direct sun / heat">Exposed to direct sun / heat</option>
+                          </>
+                        )}
+                        {dvCategory === 'device' && (
+                          <>
+                            <option value="Cool and dry place (Below 25°C)">Cool and dry place (Below 25°C)</option>
+                            <option value="Protected from direct sunlight / Heat">Protected from direct sunlight / Heat</option>
+                            <option value="Controlled room temperature (15–30°C)">Controlled room temperature (15–30°C)</option>
+                            <option value="Refrigerated (2–8°C)">Refrigerated (2–8°C)</option>
+                            <option value="Dry environment away from moisture">Dry environment away from moisture</option>
+                            <option value="Exposed to excessive heat / Humidity">Exposed to excessive heat / Humidity</option>
+                          </>
+                        )}
+                        <option value="Unknown">Unknown</option>
                       </select>
                     </div>
                     <div className="field">
@@ -2124,55 +2055,72 @@ COMMUNICATION RULES:
                         <option value="">Select condition</option>
                         <option value="intact">Intact & factory sealed</option>
                         <option value="opened">Opened but undamaged</option>
-                        <option value="dispensing_envelope">Pharmacy dispensing envelope / Ziplock</option>
+                        {dvCategory === 'drug' && (
+                          <option value="dispensing_envelope">Pharmacy dispensing envelope / Ziplock</option>
+                        )}
                         <option value="damaged">Damaged / torn / wet</option>
                         <option value="repackaged">Repackaged / suspicious</option>
                         <option value="missing">No packaging / loose</option>
                       </select>
                     </div>
-                    <div className="field">
-                      <label>DRUG FORM</label>
-                      <select value={dvDrugForm} onChange={(e) => setDvDrugForm(e.target.value)}>
-                        <option value="">Select form</option>
-                        <option value="tablet">Tablet</option>
-                        <option value="capsule">Capsule</option>
-                        <option value="caplet">Caplet</option>
-                        <option value="liquid">Liquid / Syrup / Suspension</option>
-                        <option value="injection">Injection / Ampoule / Vial</option>
-                        <option value="cream">Cream / Ointment / Gel</option>
-                        <option value="powder">Powder / Sachet</option>
-                        <option value="drops">Drops (Eye/Ear/Nose)</option>
-                        <option value="inhaler">Inhaler / Spray</option>
-                        <option value="suppository">Suppository / Pessary</option>
-                        <option value="patch">Transdermal Patch</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div className="field">
-                      <label>ROUTE OF ADMINISTRATION</label>
-                      <select value={dvRouteAdmin} onChange={(e) => setDvRouteAdmin(e.target.value)}>
-                        <option value="">Select route</option>
-                        <option value="oral">Oral (Swallowed)</option>
-                        <option value="topical">Topical (On Skin)</option>
-                        <option value="intramuscular">Intramuscular (IM Injection)</option>
-                        <option value="intravenous">Intravenous (IV Injection)</option>
-                        <option value="subcutaneous">Subcutaneous (SC Injection)</option>
-                        <option value="inhalation">Inhalation (Breathed in)</option>
-                        <option value="ophthalmic">Ophthalmic (Eye drops)</option>
-                        <option value="otic">Otic (Ear drops)</option>
-                        <option value="nasal">Nasal (Nose drops/spray)</option>
-                        <option value="rectal">Rectal</option>
-                        <option value="vaginal">Vaginal</option>
-                        <option value="sublingual">Sublingual (Under tongue)</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
+
+                    {dvCategory === 'drug' && (
+                      <>
+                        <div className="field">
+                          <label>DRUG FORM</label>
+                          <select value={dvDrugForm} onChange={(e) => setDvDrugForm(e.target.value)}>
+                            <option value="">Select form</option>
+                            <option value="tablet">Tablet</option>
+                            <option value="capsule">Capsule</option>
+                            <option value="caplet">Caplet</option>
+                            <option value="liquid">Liquid / Syrup / Suspension</option>
+                            <option value="injection">Injection / Ampoule / Vial</option>
+                            <option value="cream">Cream / Ointment / Gel</option>
+                            <option value="powder">Powder / Sachet</option>
+                            <option value="drops">Drops (Eye/Ear/Nose)</option>
+                            <option value="inhaler">Inhaler / Spray</option>
+                            <option value="suppository">Suppository / Pessary</option>
+                            <option value="patch">Transdermal Patch</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label>ROUTE OF ADMINISTRATION</label>
+                          <select value={dvRouteAdmin} onChange={(e) => setDvRouteAdmin(e.target.value)}>
+                            <option value="">Select route</option>
+                            <option value="oral">Oral (Swallowed)</option>
+                            <option value="topical">Topical (On Skin)</option>
+                            <option value="intramuscular">Intramuscular (IM Injection)</option>
+                            <option value="intravenous">Intravenous (IV Injection)</option>
+                            <option value="subcutaneous">Subcutaneous (SC Injection)</option>
+                            <option value="inhalation">Inhalation (Breathed in)</option>
+                            <option value="ophthalmic">Ophthalmic (Eye drops)</option>
+                            <option value="otic">Otic (Ear drops)</option>
+                            <option value="nasal">Nasal (Nose drops/spray)</option>
+                            <option value="rectal">Rectal</option>
+                            <option value="vaginal">Vaginal</option>
+                            <option value="sublingual">Sublingual (Under tongue)</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
+                    
                     <div className="field full">
                       <label>SOURCE OF ACQUISITION</label>
                       <select value={dvSource} onChange={(e) => setDvSource(e.target.value)}>
                         <option value="">Where was it purchased?</option>
-                        <option value="pharmacy">Licensed pharmacy</option>
-                        <option value="hospital">Hospital / clinic</option>
+                        {dvCategory === 'drug' ? (
+                          <>
+                            <option value="pharmacy">Licensed pharmacy</option>
+                            <option value="hospital">Hospital / clinic</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="supermarket">Supermarket / Mall</option>
+                            <option value="grocery">Local grocery store / kiosk</option>
+                          </>
+                        )}
                         <option value="market">Open market / hawker</option>
                         <option value="online">Online store</option>
                         <option value="other">Other</option>
@@ -2181,7 +2129,7 @@ COMMUNICATION RULES:
                     <div className="field full">
                       <label>VISUAL OBSERVATIONS</label>
                       <textarea
-                        placeholder="Describe any changes — discoloration, unusual smell, crumbling tablets, cloudiness in liquid, mold, unexpected taste, cracks, etc."
+                        placeholder="Describe any visible issues — discoloration, unusual smell, floating particles, mold, cracks, etc."
                         value={dvObservations}
                         onChange={(e) => setDvObservations(e.target.value)}
                       ></textarea>
@@ -2193,7 +2141,7 @@ COMMUNICATION RULES:
                   </div>
 
                   <div className="checks">
-                    {[
+                    {(dvCategory === 'drug' ? [
                       { id: 'discolored', label: 'Unusual / changed color' },
                       { id: 'smell', label: 'Strange or foul odor' },
                       { id: 'texture', label: 'Changed texture / crumbling' },
@@ -2204,7 +2152,36 @@ COMMUNICATION RULES:
                       { id: 'counterfeit', label: 'Suspected counterfeit' },
                       { id: 'wrong_size', label: 'Unusual pill size/shape' },
                       { id: 'none', label: 'None observed' },
-                    ].map((item) => (
+                    ] : dvCategory === 'food' ? [
+                      { id: 'swollen', label: 'Swollen / Bloated packaging' },
+                      { id: 'foul_odor', label: 'Sour or foul odor' },
+                      { id: 'mold', label: 'Mold / Fungal growth' },
+                      { id: 'foreign_object', label: 'Foreign object (worms/insects)' },
+                      { id: 'color_change', label: 'Unusual color or texture' },
+                      { id: 'leaking', label: 'Leaking or broken seal' },
+                      { id: 'expired_taste', label: 'Tastes expired / rancid' },
+                      { id: 'none', label: 'None observed' },
+                    ] : dvCategory === 'water' ? [
+                      { id: 'particles', label: 'Floating particles / debris' },
+                      { id: 'cloudy', label: 'Cloudy / Unclear water' },
+                      { id: 'broken_seal', label: 'Broken or tampered seal' },
+                      { id: 'taste_smell', label: 'Strange taste or smell' },
+                      { id: 'fake_nafdac', label: 'Looks like fake NAFDAC print' },
+                      { id: 'none', label: 'None observed' },
+                    ] : dvCategory === 'device' ? [
+                      { id: 'punctured', label: 'Punctured / Torn Packaging' },
+                      { id: 'moisture', label: 'Moisture / Condensation inside' },
+                      { id: 'yellowing', label: 'Yellowing / Brittle / Discolored' },
+                      { id: 'missing_mark', label: 'Missing sterilization mark' },
+                      { id: 'smell', label: 'Foul or chemical smell' },
+                      { id: 'none', label: 'None observed' },
+                    ] : [
+                      { id: 'skin_irritation', label: 'Causes skin irritation / rash' },
+                      { id: 'strange_smell', label: 'Chemical or rancid smell' },
+                      { id: 'separation', label: 'Product separation / watery' },
+                      { id: 'fake_label', label: 'Smudged or counterfeit label' },
+                      { id: 'none', label: 'None observed' },
+                    ]).map((item) => (
                       <label key={item.id} className="check-box">
                         <input
                           type="checkbox"
@@ -2218,11 +2195,10 @@ COMMUNICATION RULES:
 
                   <button className="verify-btn" onClick={handleRunVerification} disabled={dvLoading}>
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                    {dvLoading ? 'Analyzing...' : 'Run Verification Analysis'}
+                    {dvLoading ? 'Querying Live NAFDAC Portal...' : 'Run Verification Analysis'}
                   </button>
                 </div>
 
-                {/* RIGHT SIDEBAR WITH GREENBOOK CONDITIONAL RECOMMENDATION */}
                 <div className="dv-aside">
                   {dvError && (
                     <div style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--blood)', padding: '1rem', borderRadius: 12, marginBottom: 14 }}>
@@ -2245,28 +2221,27 @@ COMMUNICATION RULES:
                   {dvResult && (
                     <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 20, padding: '1.5rem' }}>
                       <span className={`status-chip chip-${dvResult.status.toLowerCase()}`}>{dvResult.status}</span>
-                      <h2 style={{ fontFamily: 'Fraunces', fontSize: 20, marginTop: 8 }}>{dvDrugName}</h2>
+                      <h2 style={{ fontFamily: 'Fraunces', fontSize: 20, marginTop: 8 }}>{lastVerifiedName || 'Verification Complete'}</h2>
                       <div style={{ fontSize: 13, color: 'var(--jade)', marginTop: 4 }}>
                         Safety Score: <strong>{dvResult.safetyScore}/100</strong>
                       </div>
 
-                      {/* CONDITIONAL GREENBOOK RECOMMENDATION */}
                       {nafdacCheckResult && !nafdacCheckResult.found && dvPackaging !== 'dispensing_envelope' && (
                         <div style={{ marginTop: '1rem', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 12, padding: '12px 14px' }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ember)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
                             ⚠️ NAFDAC Verification Notice
                           </div>
                           <p style={{ fontSize: 12.5, color: '#e5b869', lineHeight: 1.5, marginBottom: 8 }}>
-                            {dvNafdacNum ? `NRN "${dvNafdacNum}"` : 'This product'} was not found in our pre-indexed offline database. We strongly recommend verifying the registry entry directly on the official Greenbook portal.
+                            {dvNafdacNum ? `NRN "${dvNafdacNum}"` : 'This product'} was not found in our live portal query. We recommend verifying the registry entry directly on the official NAFDAC portal.
                           </p>
                           <a
-                            href={nafdacCheckResult.greenbook_url || `https://greenbook.nafdac.gov.ng/?search=${encodeURIComponent(dvNafdacNum || dvDrugName)}`}
+                            href={nafdacCheckResult.greenbook_url || `https://greenbook.nafdac.gov.ng/?search=${encodeURIComponent(dvNafdacNum)}`}
                             target="_blank"
                             rel="noreferrer"
                             className="btn-jade"
                             style={{ display: 'inline-block', textAlign: 'center', width: '100%', fontSize: 12.5, padding: '8px 14px', textDecoration: 'none' }}
                           >
-                            Check on NAFDAC Greenbook ↗
+                            Check on NAFDAC Portal ↗
                           </a>
                         </div>
                       )}
@@ -2310,7 +2285,143 @@ COMMUNICATION RULES:
             </div>
           )}
 
-          {/* ═════════ VIEW 3: DRUG INTERACTIONS ═════════ */}
+          {activeView === 'report' && (
+            <div>
+              <div style={{ marginBottom: '2rem' }}>
+                <h1 style={{ fontFamily: 'Fraunces', fontSize: 26, fontWeight: 700 }}>Report Defect or Counterfeit</h1>
+                <p style={{ fontSize: 13.5, color: 'var(--text3)', marginTop: 4 }}>
+                  Help protect your community. Submit evidence of compromised products, contaminated food, or fake medications.
+                </p>
+              </div>
+
+              <div className="report-grid-wrap" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 350px', gap: '2rem', alignItems: 'start' }}>
+                
+                {/* LEFT COLUMN: THE FORM */}
+                <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 20, padding: '2.5rem', width: '100%' }}>
+                  {repSuccessMsg ? (
+                    <div style={{ background: 'var(--jade-pale)', color: 'var(--jade)', padding: '2.5rem', borderRadius: 16, textAlign: 'center', border: '1px solid rgba(0,201,122,0.3)' }}>
+                      <div style={{ fontSize: 48, marginBottom: '1rem' }}>🛡️</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, marginBottom: '0.5rem' }}>Report Submitted &amp; Logged Successfully</div>
+                      <p style={{ fontSize: 14, color: 'var(--text2)', lineHeight: 1.6, maxWidth: 500, margin: '0 auto' }}>
+                        Thank you for keeping Nigeria safe. Your report status is set to <strong style={{ color: 'var(--jade)' }}>Pending Admin Review</strong> and will be escalated to NAFDAC compliance officers upon verification.
+                      </p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleReportSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--jade)', marginBottom: '0.5rem' }}>
+                        Product Category
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', background: 'var(--surface)', padding: '6px', borderRadius: '12px', flexWrap: 'wrap' }}>
+                        <button type="button" onClick={() => setRepCategory('drug')} style={{ flex: 1, minWidth: '90px', padding: '10px 6px', borderRadius: '8px', border: 'none', background: repCategory === 'drug' ? 'var(--jade)' : 'transparent', color: repCategory === 'drug' ? 'var(--void)' : 'var(--text2)', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>💊 Medication</button>
+                        <button type="button" onClick={() => setRepCategory('food')} style={{ flex: 1, minWidth: '90px', padding: '10px 6px', borderRadius: '8px', border: 'none', background: repCategory === 'food' ? 'var(--jade)' : 'transparent', color: repCategory === 'food' ? 'var(--void)' : 'var(--text2)', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>🧃 Food / Bev</button>
+                        <button type="button" onClick={() => setRepCategory('water')} style={{ flex: 1, minWidth: '90px', padding: '10px 6px', borderRadius: '8px', border: 'none', background: repCategory === 'water' ? 'var(--jade)' : 'transparent', color: repCategory === 'water' ? 'var(--void)' : 'var(--text2)', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>💧 Water</button>
+                        <button type="button" onClick={() => setRepCategory('cosmetic')} style={{ flex: 1, minWidth: '90px', padding: '10px 6px', borderRadius: '8px', border: 'none', background: repCategory === 'cosmetic' ? 'var(--jade)' : 'transparent', color: repCategory === 'cosmetic' ? 'var(--void)' : 'var(--text2)', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>💄 Cosmetics</button>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                        <div className="field">
+                          <label>Product Name *</label>
+                          <input type="text" placeholder="e.g. Emzor Paracetamol / Nutri-Milk" value={repProductName} onChange={(e) => setRepProductName(e.target.value)} required />
+                        </div>
+                        <div className="field">
+                          <label>Manufacturer / Brand</label>
+                          <input type="text" placeholder="e.g. Emzor Pharmaceuticals" value={repManufacturer} onChange={(e) => setRepManufacturer(e.target.value)} />
+                        </div>
+                        <div className="field">
+                          <label>NAFDAC Registration Number (If visible)</label>
+                          <input type="text" placeholder="e.g. A4-0123" value={repNafdacNum} onChange={(e) => setRepNafdacNum(e.target.value)} />
+                        </div>
+                        <div className="field">
+                          <label>Batch / Lot Number</label>
+                          <input type="text" placeholder="e.g. BTX-2023-441" value={repBatchNum} onChange={(e) => setRepBatchNum(e.target.value)} />
+                        </div>
+                        <div className="field full">
+                          <label>Where was it purchased? (Location / Store name) *</label>
+                          <input type="text" placeholder="e.g. Open market in Ikeja / Medplus Pharmacy Lekki" value={repLocation} onChange={(e) => setRepLocation(e.target.value)} required />
+                        </div>
+                        <div className="field full">
+                          <label>Detailed Description of Defect or Counterfeit Sign *</label>
+                          <textarea placeholder="Explain clearly what you observed..." value={repDescription} onChange={(e) => setRepDescription(e.target.value)} required style={{ minHeight: 110 }}></textarea>
+                        </div>
+
+                        <div className="field full">
+                          <label>Mandatory Evidence (Photo or Short Video) *</label>
+                          <div style={{ background: 'var(--surface)', border: '1.5px dashed var(--line2)', borderRadius: 12, padding: '1.5rem', textAlign: 'center' }}>
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,video/mp4,video/quicktime"
+                              onChange={(e) => setRepFile(e.target.files?.[0] || null)}
+                              style={{ display: 'none' }}
+                              id="defect-file"
+                              required
+                            />
+                            <label htmlFor="defect-file" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 24 }}>📁</span>
+                              <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)' }}>
+                                {repFile ? `Selected: ${repFile.name}` : 'Click to upload photo or video evidence'}
+                              </span>
+                              <span style={{ fontSize: 11.5, color: 'var(--text3)' }}>Supports JPG, PNG, MP4 (Max 25MB)</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button type="submit" className="verify-btn" disabled={repSubmitting} style={{ marginTop: '1rem' }}>
+                        {repSubmitting ? 'Submitting Report...' : 'Submit Report for Triage →'}
+                      </button>
+                    </form>
+                  )}
+                </div>
+
+                {/* RIGHT COLUMN: RECENT SCANS PICKER */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'sticky', top: 80 }}>
+                  <div>
+                    <h3 style={{ fontFamily: 'Fraunces', fontSize: 18, fontWeight: 700, color: '#fff' }}>Quick Fill</h3>
+                    <p style={{ fontSize: 12.5, color: 'var(--text3)', marginTop: 4 }}>Select a recently verified product to auto-fill the report form instantly.</p>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', paddingRight: '5px' }}>
+                    {history.length === 0 ? (
+                      <div style={{ padding: '2rem 1rem', textAlign: 'center', background: 'var(--card)', borderRadius: 16, border: '1px solid var(--line)', color: 'var(--text3)', fontSize: 13 }}>
+                        No recent scans found. Complete a verification first to quick-fill this form.
+                      </div>
+                    ) : (
+                      history.slice(0, 15).map(record => (
+                        <div
+                          key={record.id}
+                          onClick={() => {
+                            // Auto-fill logic
+                            let matchedCategory: typeof repCategory = 'drug';
+                            const df = (record.drugForm || '').toLowerCase();
+                            if (df.includes('water')) matchedCategory = 'water';
+                            else if (df.includes('food') || df.includes('bev')) matchedCategory = 'food';
+                            else if (df.includes('cosmetic')) matchedCategory = 'cosmetic';
+                            
+                            setRepCategory(matchedCategory);
+                            setRepProductName(record.drugName || '');
+                            setRepManufacturer(record.manufacturer || '');
+                            setRepNafdacNum(record.nafdacNum && record.nafdacNum !== 'N/A' ? record.nafdacNum : '');
+                            setRepBatchNum(record.batchNum && record.batchNum !== 'N/A' ? record.batchNum : '');
+                            setRepLocation(record.source || '');
+                          }}
+                          style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, padding: '1rem', cursor: 'pointer', transition: 'all 0.15s' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--jade)'; e.currentTarget.style.background = 'var(--jade-pale)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.background = 'var(--card)'; }}
+                        >
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{record.drugName}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>{record.nafdacNum !== 'N/A' ? record.nafdacNum : 'No NRN'}</span>
+                            <span className={`status-chip chip-${record.status.toLowerCase()}`} style={{ padding: '2px 6px', fontSize: 9 }}>{record.status}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeView === 'interactions' && (
             <div>
               <div style={{ marginBottom: '1.75rem' }}>
@@ -2320,11 +2431,8 @@ COMMUNICATION RULES:
                 </p>
               </div>
 
-              {/* RESPONSIVE LAYOUT: FORM & RESULTS ON TOP/LEFT, RECENT CHECKS ON BOTTOM/RIGHT */}
               <div className="interactions-grid-wrap">
-                {/* CHECKER FORM + ACTIVE RESULT */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0, width: '100%' }}>
-                  {/* INPUT CARD */}
                   <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.5rem', width: '100%' }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>
                       Enter Active Ingredients or Brand Names
@@ -2378,7 +2486,6 @@ COMMUNICATION RULES:
                     </div>
                   </div>
 
-                  {/* RESULTS AREA */}
                   {interactionResult && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                       {(() => {
@@ -2386,10 +2493,10 @@ COMMUNICATION RULES:
                           (it) => it.severity.toLowerCase() === 'contraindicated'
                         );
                         const themeColor = !interactionResult.has_interactions
-                          ? '#00c97a' // Safe (Green)
+                          ? '#00c97a'
                           : hasContraindicated
-                          ? '#ef4444' // Strict Contraindication only (Red)
-                          : '#f59e0b'; // Clinical caution / standard co-prescription (Warm Amber)
+                          ? '#ef4444'
+                          : '#f59e0b';
 
                         return (
                           <div
@@ -2455,7 +2562,6 @@ COMMUNICATION RULES:
                               </span>
                             </div>
 
-                            {/* DOCTOR / PHARMACIST CERTIFIED CHECKBOX */}
                             <div style={{ background: 'var(--surface)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--line)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                               <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12.5, color: 'var(--text2)', fontWeight: 500 }}>
                                 <input
@@ -2473,21 +2579,17 @@ COMMUNICATION RULES:
                               )}
                             </div>
 
-                            {/* IF OVERRIDDEN: SHOW CO-PRESCRIPTION MANAGEMENT PROTOCOL */}
                             {isCertified && item.co_prescription_context && (
                               <div style={{ background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 12, padding: '1.25rem', marginBottom: '1rem' }}>
                                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#38bdf8', marginBottom: 6 }}>
                                   🩺 Co-Prescription Management Protocol
                                 </div>
-                                
                                 <div style={{ fontSize: 13, color: 'var(--text1)', lineHeight: 1.5, marginBottom: 10 }}>
                                   <strong style={{ color: '#fff' }}>Why this combination is prescribed:</strong> {item.co_prescription_context.clinical_intent}
                                 </div>
-
                                 <div style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 10, background: 'var(--surface)', padding: '10px 12px', borderRadius: 8, borderLeft: '3px solid #38bdf8' }}>
                                   <strong style={{ color: '#38bdf8' }}>Safety Precautions:</strong> {item.co_prescription_context.safety_precautions}
                                 </div>
-
                                 <div style={{ fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>
                                   ℹ️ {item.co_prescription_context.patient_advice}
                                 </div>
@@ -2503,7 +2605,6 @@ COMMUNICATION RULES:
                                   {item.mechanism}
                                 </div>
                               </div>
-
                               <div style={{ background: 'var(--surface)', padding: '1rem', borderRadius: 10 }}>
                                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 4 }}>
                                   Clinical Effect
@@ -2529,7 +2630,6 @@ COMMUNICATION RULES:
                   )}
                 </div>
 
-                {/* RIGHT COLUMN: RECENT INTERACTION CHECKS */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%' }}>
                   <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '1.25rem', width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
@@ -2562,8 +2662,6 @@ COMMUNICATION RULES:
                               position: 'relative',
                               transition: 'all 0.15s',
                             }}
-                            onMouseOver={(e) => (e.currentTarget.style.borderColor = 'rgba(0,201,122,0.3)')}
-                            onMouseOut={(e) => (e.currentTarget.style.borderColor = 'var(--line)')}
                           >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
                               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)', lineHeight: 1.3 }}>
@@ -2577,7 +2675,6 @@ COMMUNICATION RULES:
                                 ✕
                               </button>
                             </div>
-
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
                               <span style={{
                                 fontSize: 9.5,
@@ -2599,27 +2696,21 @@ COMMUNICATION RULES:
                       </div>
                     )}
                   </div>
-
-                  <div style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', padding: '1.25rem', borderRadius: 16, fontSize: 12, color: '#a07830', lineHeight: 1.6, width: '100%' }}>
-                    <strong style={{ display: 'block', color: 'var(--ember)', marginBottom: 4 }}>💡 Clinical Reminder</strong>
-                    Brand-name medications may contain multiple active ingredients. Always confirm dosages with your prescriber.
-                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* ═════════ VIEW 4: SCAN HISTORY ═════════ */}
           {activeView === 'history' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
                   <h1 style={{ fontFamily: 'Fraunces', fontSize: 26, fontWeight: 700 }}>Scan History</h1>
-                  <p style={{ fontSize: 13.5, color: 'var(--text3)', marginTop: 4 }}>All your drug verifications in one place</p>
+                  <p style={{ fontSize: 13.5, color: 'var(--text3)', marginTop: 4 }}>All your product verifications in one place</p>
                 </div>
                 <button
                   onClick={() => {
-                    const csvContent = 'data:text/csv;charset=utf-8,' + ['Drug,Status,Score,Source,Date', ...history.map((h) => `"${h.drugName}","${h.status}",${h.safetyScore},"${h.source || ''}","${h.date}"`)].join('\n');
+                    const csvContent = 'data:text/csv;charset=utf-8,' + ['Product,Status,Score,Source,Date', ...history.map((h) => `"${h.drugName}","${h.status}",${h.safetyScore},"${h.source || ''}","${h.date}"`)].join('\n');
                     const link = document.createElement('a');
                     link.setAttribute('href', encodeURI(csvContent));
                     link.setAttribute('download', 'pharmaverify_history.csv');
@@ -2636,7 +2727,7 @@ COMMUNICATION RULES:
                 <div className="history-toolbar" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <input
                     type="text"
-                    placeholder="Search drug name..."
+                    placeholder="Search product name..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ flex: '1 1 200px', minWidth: 0, background: 'var(--surface)', border: '1px solid var(--line)', color: '#fff', padding: '9px 14px', borderRadius: 8, outline: 'none' }}
@@ -2657,7 +2748,7 @@ COMMUNICATION RULES:
                   <table>
                     <thead>
                       <tr>
-                        <th>Drug</th>
+                        <th>Product</th>
                         <th>Result</th>
                         <th>Score</th>
                         <th>Form</th>
@@ -2714,7 +2805,6 @@ COMMUNICATION RULES:
             </div>
           )}
 
-          {/* ═════════ VIEW 5: ANALYTICS ═════════ */}
           {activeView === 'analytics' && (
             <div>
               <div style={{ marginBottom: '2rem' }}>
@@ -2733,11 +2823,11 @@ COMMUNICATION RULES:
                 </div>
                 <div className="stat-card">
                   <div className="stat-num" style={{ color: 'var(--blood)' }}>{unsafeScans}</div>
-                  <div className="stat-label">Drugs Flagged Unsafe</div>
+                  <div className="stat-label">Products Flagged Unsafe</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-num" style={{ color: '#8b5cf6' }}>{uniqueDrugsCount}</div>
-                  <div className="stat-label">Unique Drugs Checked</div>
+                  <div className="stat-label">Unique Items Checked</div>
                 </div>
               </div>
 
@@ -2757,7 +2847,7 @@ COMMUNICATION RULES:
                 <div className="chart-card">
                   <div className="chart-head">
                     <div>
-                      <h3>Top 5 Most Checked Drugs</h3>
+                      <h3>Top 5 Most Checked Items</h3>
                       <p>By verification count</p>
                     </div>
                   </div>
@@ -2775,7 +2865,7 @@ COMMUNICATION RULES:
                       </div>
                     ))}
                     {topDrugs.length === 0 && (
-                      <div style={{ color: 'var(--text3)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>No drug data yet</div>
+                      <div style={{ color: 'var(--text3)', fontSize: 13, textAlign: 'center', padding: '2rem 0' }}>No data yet</div>
                     )}
                   </div>
                 </div>
@@ -2786,12 +2876,13 @@ COMMUNICATION RULES:
                   <div className="chart-head">
                     <div>
                       <h3>Acquisition Sources</h3>
-                      <p>Where your drugs come from</p>
+                      <p>Where your products come from</p>
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {['pharmacy', 'hospital', 'market', 'online'].map((src) => {
+                    {['pharmacy', 'hospital', 'market', 'online', 'supermarket', 'grocery'].map((src) => {
                       const count = history.filter((h) => h.source === src).length;
+                      if (count === 0) return null;
                       return (
                         <div key={src} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, borderBottom: '1px solid var(--line)', padding: '6px 0' }}>
                           <span style={{ textTransform: 'capitalize', color: 'var(--text2)' }}>{src}</span>
@@ -2805,7 +2896,7 @@ COMMUNICATION RULES:
                 <div className="chart-card">
                   <div className="chart-head">
                     <div>
-                      <h3>Drug Forms Verified</h3>
+                      <h3>Item Forms Verified</h3>
                       <p>Breakdown by form type</p>
                     </div>
                   </div>
@@ -2829,7 +2920,6 @@ COMMUNICATION RULES:
             </div>
           )}
 
-          {/* ═════════ VIEW 6: MY PROFILE ═════════ */}
           {activeView === 'account' && (
             <div>
               <div style={{ marginBottom: '2rem' }}>
@@ -2838,7 +2928,6 @@ COMMUNICATION RULES:
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '1.5rem' }}>
-                {/* AVATAR & INFO CARD */}
                 <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, overflow: 'hidden' }}>
                   <div style={{ padding: '2rem 1.5rem', textAlign: 'center', borderBottom: '1px solid var(--line)', background: 'linear-gradient(180deg, var(--jade-pale), transparent)' }}>
                     <div style={{ position: 'relative', width: 88, height: 88, margin: '0 auto 1.25rem' }}>
@@ -2890,7 +2979,6 @@ COMMUNICATION RULES:
                     </div>
                   </div>
 
-                  {/* DANGER ZONE */}
                   <div style={{ margin: '0 1rem 1rem', padding: 14, background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--blood)', marginBottom: 6 }}>Danger Zone</div>
                     <p style={{ fontSize: 11.5, color: 'var(--text3)', lineHeight: 1.5, marginBottom: 10 }}>
@@ -2899,15 +2987,12 @@ COMMUNICATION RULES:
                     <button
                       onClick={handleDeleteAccount}
                       style={{ width: '100%', padding: 9, background: 'transparent', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 8, color: 'var(--blood)', fontFamily: 'Epilogue', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
-                      onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
-                      onMouseOut={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
                       Delete Account
                     </button>
                   </div>
                 </div>
 
-                {/* EDIT PROFILE FORM */}
                 <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, padding: '2rem' }}>
                   <h3 style={{ fontFamily: 'Fraunces', fontSize: 18, fontWeight: 700 }}>Edit Profile</h3>
                   <p style={{ fontSize: 13, color: 'var(--text3)', marginBottom: '1.5rem', borderBottom: '1px solid var(--line)', paddingBottom: '1rem' }}>
@@ -2915,6 +3000,10 @@ COMMUNICATION RULES:
                   </p>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div className="field" style={{ gridColumn: '1/-1' }}>
+                      <label>Username *</label>
+                      <input type="text" placeholder="e.g. ghosted17" value={profile['pf-username']} onChange={(e) => setProfile({ ...profile, 'pf-username': e.target.value.trim() })} />
+                    </div>
                     <div className="field">
                       <label>First Name *</label>
                       <input type="text" value={profile['pf-firstname']} onChange={(e) => setProfile({ ...profile, 'pf-firstname': e.target.value })} />
@@ -2959,7 +3048,7 @@ COMMUNICATION RULES:
                       <label>Known Drug Allergies</label>
                       <input
                         type="text"
-                        placeholder="e.g. Penicillin, Sulfa drugs, Aspirin (helps AI warn you)"
+                        placeholder="e.g. Penicillin, Sulfa drugs, Aspirin"
                         value={profile['pf-allergies']}
                         onChange={(e) => setProfile({ ...profile, 'pf-allergies': e.target.value })}
                       />
@@ -2989,7 +3078,6 @@ COMMUNICATION RULES:
             </div>
           )}
 
-          {/* ═════════ VIEW 7: AI PHARMABOT ═════════ */}
           {activeView === 'assistant' && (
             <div>
               <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -3009,7 +3097,6 @@ COMMUNICATION RULES:
               </div>
 
               <div className="assistant-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '1.25rem', alignItems: 'start' }}>
-                {/* PRIMARY CHAT PANEL */}
                 <div className="chat-panel" style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 580 }}>
                   <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ width: 36, height: 36, background: 'var(--jade)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--void)', fontWeight: 800 }}>
@@ -3076,7 +3163,6 @@ COMMUNICATION RULES:
                   </div>
                 </div>
 
-                {/* RIGHT QUICK QUESTIONS & DISCLAIMER */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ background: 'var(--card)', border: '1px solid var(--line)', padding: '1.25rem', borderRadius: 16 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 10 }}>
@@ -3109,7 +3195,6 @@ COMMUNICATION RULES:
             </div>
           )}
 
-          {/* ═════════ VIEW 8: CHAT HISTORY ═════════ */}
           {activeView === 'chat-history' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -3217,7 +3302,6 @@ COMMUNICATION RULES:
         </main>
       </div> 
 
-      {/* MODAL: AVATAR PICKER */}
       {avatarModalOpen && (
         <div className="modal-overlay" onClick={() => setAvatarModalOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
@@ -3287,7 +3371,6 @@ COMMUNICATION RULES:
         </div>
       )}
 
-      {/* MODAL: DETAIL VIEW */}
       {selectedRecord && (
         <div className="modal-overlay" onClick={() => setSelectedRecord(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -3328,7 +3411,6 @@ COMMUNICATION RULES:
         </div>
       )}
 
-      {/* MODAL: NOTIFICATION DETAIL */}
       {selectedNotif && (
         <div className="modal-overlay" onClick={() => setSelectedNotif(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>

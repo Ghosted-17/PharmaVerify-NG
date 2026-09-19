@@ -9,6 +9,7 @@ interface DrugAssessment {
   proTip: string;
 }
 
+// Rewritten Fallback to match "Adetutu" Persona if Gemini API fails
 function fallbackPharmaceuticalAnalysis(prompt: string): DrugAssessment {
   const flags: { type: 'ok' | 'warn' | 'bad'; message: string }[] = [];
   let score = 100;
@@ -32,12 +33,12 @@ function fallbackPharmaceuticalAnalysis(prompt: string): DrugAssessment {
   if (isExpired) {
     score -= 60;
     status = 'UNSAFE';
-    flags.push({ type: 'bad', message: 'Product is past its official manufacturer expiration date.' });
+    flags.push({ type: 'bad', message: 'This item has passed its official expiration date.' });
   } else if (expiresSoon) {
     score -= 15;
-    flags.push({ type: 'warn', message: 'Product is approaching its expiration date soon.' });
+    flags.push({ type: 'warn', message: 'This item is expiring very soon.' });
   } else {
-    flags.push({ type: 'ok', message: 'Product appears within valid shelf-life parameters.' });
+    flags.push({ type: 'ok', message: 'Shelf-life looks completely fine.' });
   }
 
   if (fromMarket) {
@@ -45,10 +46,10 @@ function fallbackPharmaceuticalAnalysis(prompt: string): DrugAssessment {
     if (status !== 'UNSAFE') status = 'CAUTION';
     flags.push({
       type: 'warn',
-      message: 'Purchased from open market/unlicensed vendor — high risk of improper storage or counterfeit supply.',
+      message: 'Purchased from an open market. Be extremely careful as storage conditions are usually poor.',
     });
   } else {
-    flags.push({ type: 'ok', message: 'Acquisition channel aligns with regulated distribution.' });
+    flags.push({ type: 'ok', message: 'Bought from a trusted source.' });
   }
 
   if (damagedPkg) {
@@ -56,7 +57,7 @@ function fallbackPharmaceuticalAnalysis(prompt: string): DrugAssessment {
     status = 'UNSAFE';
     flags.push({
       type: 'bad',
-      message: 'Packaging integrity is compromised, risking active ingredient degradation or contamination.',
+      message: 'The packaging is damaged, which means it might be contaminated.',
     });
   }
 
@@ -65,7 +66,7 @@ function fallbackPharmaceuticalAnalysis(prompt: string): DrugAssessment {
     if (status !== 'UNSAFE') status = 'CAUTION';
     flags.push({
       type: 'warn',
-      message: 'Exposed to elevated heat or humidity contrary to pharmacopeial storage standards.',
+      message: 'Stored in hot or humid conditions which can ruin the active ingredients.',
     });
   }
 
@@ -74,7 +75,7 @@ function fallbackPharmaceuticalAnalysis(prompt: string): DrugAssessment {
     status = 'UNSAFE';
     flags.push({
       type: 'bad',
-      message: 'Visible physical abnormalities (color, odor, precipitate, or crumbling) detected.',
+      message: 'Visible changes like bad color, smell, or mold were noticed.',
     });
   }
 
@@ -83,7 +84,7 @@ function fallbackPharmaceuticalAnalysis(prompt: string): DrugAssessment {
     status = 'UNSAFE';
     flags.push({
       type: 'bad',
-      message: 'Reported indicators consistent with counterfeit or substandard pharmaceutical presentation.',
+      message: 'Signs strongly point to this being a fake product.',
     });
   }
 
@@ -93,17 +94,17 @@ function fallbackPharmaceuticalAnalysis(prompt: string): DrugAssessment {
   else if (score < 80 && status !== 'UNSAFE') status = 'CAUTION';
 
   const summaries = {
-    SAFE: 'The provided parameters suggest acceptable product integrity with no overt signs of physical degradation or supply chain tampering.',
-    CAUTION: 'Moderate risk factors observed. Storage history, packaging integrity, or distribution source warrant verification prior to administration.',
-    UNSAFE: 'Critical safety violations identified. The medication exhibits severe degradation, packaging compromise, or shelf-life invalidity.',
-    UNKNOWN: 'Insufficient parameters provided to determine pharmaceutical stability.',
+    SAFE: 'Honestly, this one checks out perfectly. Based on the offline checks, everything you described looks entirely safe.',
+    CAUTION: 'I need to be honest with you, there are a few red flags here regarding how it was stored or packaged. Please be careful.',
+    UNSAFE: 'Please do not consume this under any circumstances. There are critical issues that make this highly dangerous to use.',
+    UNKNOWN: 'I do not have enough details from you to confidently say if this is safe or not.',
   };
 
   const recommendations = {
-    SAFE: 'Product is generally considered fit for use according to provided parameters. Store according to leaflet directions.',
-    CAUTION: 'Have a licensed pharmacist examine the physical unit and verify the batch against NAFDAC registries before ingestion.',
-    UNSAFE: 'Do NOT ingest or administer this product. Quarantine the unit and report the batch number to NAFDAC enforcement.',
-    UNKNOWN: 'Consult a licensed pharmacist with the original packaging.',
+    SAFE: 'You are good to go. Just remember to store it in a cool, dry place.',
+    CAUTION: 'Take this to a licensed pharmacist physically so they can examine the carton before you use it.',
+    UNSAFE: 'Throw this away immediately or return it to where you bought it. Do not use it.',
+    UNKNOWN: 'Please take this to a nearby pharmacy for a physical check.',
   };
 
   return {
@@ -112,7 +113,7 @@ function fallbackPharmaceuticalAnalysis(prompt: string): DrugAssessment {
     summary: summaries[status],
     flags,
     recommendation: recommendations[status],
-    proTip: 'Always verify the NAFDAC Registration Number (NRN) and check the scratch-off Mobile Authentication Service (MAS) PIN if available.',
+    proTip: 'Always double-check the scratch-off MAS code on the box to confirm it is completely genuine.',
   };
 }
 
@@ -143,10 +144,9 @@ export async function POST(req: Request) {
 
         contents.push({ role: 'user', parts: [{ text: prompt }] });
 
-        // If it's the chatbot, return natural Markdown; if it's drug verification, request JSON
         const generationConfig: any = {
           temperature: isChat ? 0.4 : 0.1,
-          maxOutputTokens: 2500, // Ample tokens to prevent JSON cutoff
+          maxOutputTokens: 2500, 
         };
 
         if (!isChat) {
@@ -162,6 +162,7 @@ export async function POST(req: Request) {
           requestPayload.systemInstruction = { parts: [{ text: systemPrompt }] };
         }
 
+        // FIX: Using the correct live Google model 'gemini-3.6-flash'
         let res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
           {
@@ -191,6 +192,8 @@ export async function POST(req: Request) {
           if (outputText) {
             return NextResponse.json({ text: outputText }, { status: 200 });
           }
+        } else {
+            console.error("Gemini API Error details:", responseText);
         }
       } catch (err: any) {
         console.error('Gemini call error:', err.message);

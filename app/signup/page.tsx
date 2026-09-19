@@ -300,7 +300,7 @@ export default function SignUpPage() {
 
       <div className="page-wrap">
         <div className="auth-card">
-          <div style={{ padding: '0.5rem 0 1rem 0' }}>
+          <div style={{ width: '100%', maxWidth: '420px', marginTop: '1rem', marginBottom: '0.5rem', paddingLeft: '1.5rem' }}>
             <Link
               href="/"
               style={{

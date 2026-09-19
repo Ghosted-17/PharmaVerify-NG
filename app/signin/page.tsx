@@ -8,6 +8,9 @@ interface UserProfile {
   username: string;
   firstname: string;
   lastname?: string;
+  email?: string;
+  role?: string;
+  avatar?: string;
 }
 
 export default function SignInPage() {
@@ -25,6 +28,9 @@ export default function SignInPage() {
   const [lockdownTimer, setLockdownTimer] = useState(30);
   const [shakePin, setShakePin] = useState(false);
   const [flashSuccess, setFlashSuccess] = useState(false);
+
+  // Role Selection Modal State for Admin / Staff
+  const [roleModalData, setRoleModalData] = useState<{ user: any; options: ('admin' | 'staff' | 'user')[] } | null>(null);
 
   // Input refs for automatic PIN focus jumping
   const pinRefs = [
@@ -101,6 +107,46 @@ export default function SignInPage() {
     setTimeout(() => usernameInputRef.current?.focus(), 100);
   };
 
+  // Quick Continue Handler for saved device sessions
+  const handleQuickContinue = async () => {
+    if (!savedUser?.username) {
+      router.push('/dashboard');
+      return;
+    }
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'lookup', username: savedUser.username.toLowerCase() }),
+      });
+      const data = await res.json();
+      if (data.found && data.user) {
+        localStorage.setItem('pv_user', JSON.stringify(data.user));
+        localStorage.setItem('pv_logged_in', 'true');
+        localStorage.setItem('pv_user_name', `${data.user.firstname} ${data.user.lastname || ''}`.trim());
+        localStorage.setItem('pv_username', data.user.username);
+        localStorage.setItem('pv_avatar', data.user.avatar || '');
+        
+        const email = (data.user.email || '').toLowerCase().trim();
+        const dbRole = (data.user.role || 'user').toLowerCase().trim();
+        
+        if (email === 'krizzyworld9@gmail.com' || dbRole === 'admin') {
+          setRoleModalData({ user: data.user, options: ['admin', 'staff', 'user'] });
+          return;
+        }
+        if (dbRole === 'staff') {
+          setRoleModalData({ user: data.user, options: ['staff', 'user'] });
+          return;
+        }
+        router.push('/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
+    } catch {
+      router.push('/dashboard');
+    }
+  };
+
   // Step 2: Handle individual PIN digit inputs
   const handlePinChange = (idx: number, val: string) => {
     if (!val.match(/^\d?$/)) return;
@@ -124,6 +170,24 @@ export default function SignInPage() {
     }
   };
 
+  // Step 3: Complete sign-in process with chosen role
+  const finalizeSignIn = (userObj: any, chosenRole: 'admin' | 'staff' | 'user') => {
+    localStorage.setItem('pv_user', JSON.stringify(userObj));
+    localStorage.setItem('pv_logged_in', 'true');
+    localStorage.setItem('pv_user_name', `${userObj.firstname} ${userObj.lastname || ''}`.trim());
+    localStorage.setItem('pv_username', userObj.username);
+    localStorage.setItem('pv_dev_role', chosenRole);
+
+    setFlashSuccess(true);
+    setTimeout(() => {
+      if (chosenRole === 'admin' || chosenRole === 'staff') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
+    }, 500);
+  };
+
   // Step 3: Verify PIN with the API
   const verifyPin = async (completedPin: string) => {
     if (completedPin.length < 4 || isLocked || !foundUser) return;
@@ -143,17 +207,24 @@ export default function SignInPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // Save auth session
-        localStorage.setItem('pv_user', JSON.stringify(data.user));
-        localStorage.setItem('pv_logged_in', 'true');
-        localStorage.setItem(
-          'pv_user_name',
-          `${data.user.firstname} ${data.user.lastname || ''}`.trim()
-        );
-        localStorage.setItem('pv_username', data.user.username);
+        const loggedUser = data.user;
+        const email = (loggedUser.email || '').toLowerCase().trim();
+        const dbRole = (loggedUser.role || 'user').toLowerCase().trim();
 
-        setFlashSuccess(true);
-        setTimeout(() => router.push('/dashboard'), 500);
+        // Master Admin or DB Admin Role Check -> Gets all 3 options (Admin, Staff, User)
+        if (email === 'krizzyworld9@gmail.com' || dbRole === 'admin') {
+          setRoleModalData({ user: loggedUser, options: ['admin', 'staff', 'user'] });
+          return;
+        }
+
+        // Staff Check -> Gets Staff and User options
+        if (dbRole === 'staff') {
+          setRoleModalData({ user: loggedUser, options: ['staff', 'user'] });
+          return;
+        }
+
+        // Standard User
+        finalizeSignIn(loggedUser, 'user');
       } else {
         const remaining = attempts - 1;
         setAttempts(remaining);
@@ -186,10 +257,10 @@ export default function SignInPage() {
           --blood:#ef4444; --blood-pale:rgba(239,68,68,0.08);
           --text:#e8f0ea; --text2:#9ab0a0; --text3:#5a7060; --white:#ffffff;
         }
-        body{font-family:'Epilogue',sans-serif;background:var(--void);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+        body{font-family:'Epilogue',sans-serif;background:var(--deep);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
         .bg-glow{position:fixed;top:0;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(0,201,122,0.07),transparent 70%);pointer-events:none;z-index:0}
 
-        nav{position:sticky;top:0;z-index:100;background:rgba(4,10,6,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+        nav{position:sticky;top:0;z-index:100;background:rgba(8,15,10,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
         .nav-logo{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--white);text-decoration:none;display:flex;align-items:center;gap:10px}
         .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--jade),var(--jade-dim));border-radius:8px;display:flex;align-items:center;justify-content:center}
         .logo-icon svg{width:16px;height:16px}
@@ -197,12 +268,12 @@ export default function SignInPage() {
         .nav-right a{color:var(--jade);text-decoration:none;font-weight:600}
         .nav-right a:hover{text-decoration:underline}
 
-        .page-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:3rem 1.5rem;position:relative;z-index:1}
+        .page-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1.5rem;position:relative;z-index:1}
         .auth-card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line2);border-radius:24px;overflow:hidden;position:relative;z-index:1;animation:fadeUp 0.4s ease}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
         .user-found{text-align:center;padding:1.5rem 2rem;background:var(--surface);border-bottom:1px solid var(--line);animation:fadeUp 0.3s ease}
-        .uf-avatar{width:60px;height:60px;background:var(--jade);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:24px;font-weight:800;color:var(--void);margin:0 auto 0.75rem}
+        .uf-avatar{width:64px;height:64px;background:var(--jade);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:24px;font-weight:800;color:var(--void);margin:0 auto 0.75rem;overflow:hidden;border:2px solid var(--line2)}
         .uf-name{font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--white)}
         .uf-username{font-size:13px;color:var(--text3);margin-top:2px}
         .uf-change{font-size:12px;color:var(--jade);cursor:pointer;margin-top:8px;display:inline-block}
@@ -250,11 +321,8 @@ export default function SignInPage() {
 
         .locked-msg{background:var(--blood-pale);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--blood);text-align:center;margin-bottom:1rem;line-height:1.6}
 
-        @media(max-width:440px){
-          .auth-card{border-radius:16px}
-          .card-body,.card-head{padding:1.5rem}
-          .pin-box{width:52px;height:60px;font-size:22px}
-        }
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;display:flex;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(4px)}
+        .modal{background:var(--card);border:1px solid var(--line2);border-radius:20px;width:100%;max-width:400px;padding:2rem;text-align:center}
       `}</style>
 
       <div className="bg-glow" />
@@ -275,25 +343,26 @@ export default function SignInPage() {
 
       <div className="page-wrap">
         <div className="auth-card">
-          <div style={{ padding: '0.5rem 0 1rem 0' }}>
-            <Link
-              href="/"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                fontSize: '0.85rem',
-                color: '#6b7280',
-                textDecoration: 'none',
-                fontWeight: 500,
-                transition: 'color 0.15s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#00c97a')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#6b7280')}
-            >
-              <span>←</span> Back to home
-            </Link>
-          </div>
+          <div style={{ width: '100%', maxWidth: '420px', marginTop: '1rem', marginBottom: '0.5rem', paddingLeft: '1.5rem' }}>
+          <Link
+            href="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontSize: '0.85rem',
+              color: 'var(--text2)',
+              textDecoration: 'none',
+              fontWeight: 500,
+              transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--jade)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text2)')}
+          >
+            <span>←</span>Back
+          </Link>
+        </div>
+
           {/* SAVED ACCOUNT QUICK ACCESS */}
           {savedUser && !foundUser && (
             <div style={{
@@ -309,6 +378,13 @@ export default function SignInPage() {
               alignItems: 'center',
               boxSizing: 'border-box',
             }}>
+              <div style={{ width: 64, height: 64, background: 'var(--jade)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Fraunces', fontSize: 24, fontWeight: 800, color: 'var(--void)', marginBottom: '0.75rem', overflow: 'hidden', border: '2px solid var(--line2)' }}>
+                {typeof window !== 'undefined' && localStorage.getItem('pv_avatar') ? (
+                  <img src={localStorage.getItem('pv_avatar') || ''} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  savedUser.name?.[0]?.toUpperCase() || 'U'
+                )}
+              </div>
               <div style={{ fontSize: '0.85rem', color: '#9ca3af', marginBottom: '0.25rem' }}>
                 Signed in previously on this device
               </div>
@@ -320,7 +396,7 @@ export default function SignInPage() {
               </div>
               <button
                 className="btn-full btn-jade"
-                onClick={() => router.push('/dashboard')}
+                onClick={handleQuickContinue}
                 style={{ marginBottom: '0.75rem' }}
               >
                 Continue as {savedUser.name.split(' ')[0]} →
@@ -351,7 +427,13 @@ export default function SignInPage() {
           {/* USER FOUND PREVIEW */}
           {foundUser && (
             <div className="user-found">
-              <div className="uf-avatar">{foundUser.firstname?.[0]?.toUpperCase() || 'U'}</div>
+              <div className="uf-avatar">
+                {foundUser.avatar ? (
+                  <img src={foundUser.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  foundUser.firstname?.[0]?.toUpperCase() || 'U'
+                )}
+              </div>
               <div className="uf-name">{`${foundUser.firstname} ${foundUser.lastname || ''}`.trim()}</div>
               <div className="uf-username">@{foundUser.username}</div>
               <span className="uf-change" onClick={handleReset}>
@@ -456,6 +538,45 @@ export default function SignInPage() {
           </div>
         </div>
       </div>
+
+      {/* MULTI-ROLE SELECTION MODAL */}
+      {roleModalData && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 style={{ fontFamily: 'Fraunces', fontSize: 20, marginBottom: 12, color: '#fff' }}>Select Login Role</h3>
+            <p style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 20 }}>
+              Choose how you would like to sign into PharmaVerify NG for this session:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {roleModalData.options.includes('admin') && (
+                <button
+                  className="btn-full btn-jade"
+                  style={{ marginTop: 0 }}
+                  onClick={() => finalizeSignIn(roleModalData.user, 'admin')}
+                >
+                  Log in as Admin 🛡️
+                </button>
+              )}
+              {roleModalData.options.includes('staff') && (
+                <button
+                  className="btn-full"
+                  style={{ marginTop: 0, background: 'rgba(0,201,122,0.15)', color: 'var(--jade)', border: '1px solid rgba(0,201,122,0.3)' }}
+                  onClick={() => finalizeSignIn(roleModalData.user, 'staff')}
+                >
+                  Log in as Staff 📋
+                </button>
+              )}
+              <button
+                className="btn-full btn-ghost-full"
+                style={{ marginTop: 0 }}
+                onClick={() => finalizeSignIn(roleModalData.user, 'user')}
+              >
+                Log in as User 👤
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

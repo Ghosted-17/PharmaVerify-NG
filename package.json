@@ -5,16 +5,18 @@
     "start": "next start"
   },
   "dependencies": {
+    "@google/genai": "^2.23.0",
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.112.4",
     "@types/node": "^26.5.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "dotenv": "^17.4.2",
     "next": "^16.3.4",
-    "puppeteer": "^25.9.0",
+    "puppeteer": "^25.11.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "resend": "^6.27.0",
+    "resend": "^6.28.1",
     "typescript": "^7.0.2"
   },
   "allowScripts": {

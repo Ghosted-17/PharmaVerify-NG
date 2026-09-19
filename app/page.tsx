@@ -18,6 +18,60 @@ interface VerificationResult {
   proTip?: string;
 }
 
+interface RegulatoryAlert {
+  id: string;
+  title: string;
+  date: string;
+  type: 'ban' | 'recall' | 'safety' | 'enforcement';
+  summary: string;
+  content: string[];
+  url: string;
+}
+
+const REGULATORY_ALERTS: RegulatoryAlert[] = [
+  {
+    id: 'alert-039-2026',
+    title: 'Public Alert No: 039/2026 – Risk of Drug Poisoning with Gabapentinoids (Pregabalin)',
+    date: 'Aug 18, 2026',
+    type: 'safety',
+    summary: 'NAFDAC warns of increased risk of severe drug poisoning when gabapentinoids (Pregabalin and Gabapentin) are used concurrently with CNS depressants like opioids or benzodiazepines.',
+    content: [
+      'The National Agency for Food and Drug Administration and Control (NAFDAC) is informing healthcare professionals and the public of emerging evidence showing an increased risk of drug poisoning when gabapentinoids (gabapentin and pregabalin) are used together with certain medicines.',
+      'A recent clinical study found that among patients taking gabapentinoids, concomitant use of CNS depressants (like benzodiazepines or opioids) was associated with approximately a two-fold increase in the risk of hospitalization for drug poisoning.',
+      'Possible adverse effects include excessive drowsiness, respiratory depression, impaired consciousness, and fatal drug poisoning.',
+      'Advice to Public: Use pregabalin only as prescribed by a healthcare professional. Avoid self-medication and unauthorized medicine combinations. Seek immediate medical attention if you experience unusual drowsiness or difficulty breathing.'
+    ],
+    url: 'https://nafdac.gov.ng/public-alert-no-039-2026-alert-on-the-risk-of-drug-poisoning-associated-with-concurrent-use-of-gabapentinoids-and-other-medicines/'
+  },
+  {
+    id: 'alert-09-2026',
+    title: 'Public Alert No. 09/2026 – Discontinued Registration of Multi-Dose Artemether/Lumefantrine',
+    date: 'Aug 19, 2026',
+    type: 'ban',
+    summary: 'NAFDAC enforces a regulatory directive discontinuing all multi-dose Artemether/Lumefantrine dry powder for oral suspension due to severe chemical instability.',
+    content: [
+      'NAFDAC is reminding the public of the Regulatory Directive issued on the discontinued registration of Multi-Dose Anti-Malarial (Artemether/Lumefantrine) dry powder for Oral Suspension.',
+      'Stability studies have demonstrated that reconstituted anti-malarial suspensions are highly unstable, resulting in a rapid loss of clinical efficacy.',
+      'When a medication loses its efficacy, it becomes less effective, which can lead to a worsening of malaria, increased risk of complications, and in severe cases, death.',
+      'Importers, distributors, and healthcare professionals are advised to immediately stop the importation, distribution, and sale of all Multi-Dose Anti-Malarial Oral Suspension products.'
+    ],
+    url: 'https://nafdac.gov.ng/public-alert-no-042-2026-alert-on-the-seizure-of-suspected-substandard-and-falsified-bppl-artemether-lumefantrine-80mg-480mg/'
+  },
+  {
+    id: 'alert-ndlea-2025',
+    title: 'Enforcement: 450,000 Seized Illicit Pregabalin Capsules Handed to NAFDAC',
+    date: 'Sep 18, 2025',
+    type: 'enforcement',
+    summary: 'NDLEA intercepted a massive undocumented shipment of Pregabalin capsules on the Kano-Hadejia road, transferring them to NAFDAC for forensic regulation.',
+    content: [
+      'The National Drug Law Enforcement Agency (NDLEA) Strategic Command has transferred 450,000 pills of undocumented Pregabalin capsules to NAFDAC for forensic and regulatory examination.',
+      'The consignment was intercepted packed in 60 cartons concealed in a van without legitimate ownership or documentation.',
+      'This joint action underscores the determination of regulatory agencies to disrupt the illicit distribution of controlled pharmaceuticals and protect public health.'
+    ],
+    url: 'https://nafdac.gov.ng'
+  }
+];
+
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'home' | 'verify' | 'services' | 'about' | 'resources' | 'contact'>('home');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -87,7 +141,7 @@ export default function HomePage() {
     return () => clearInterval(stepTimer);
   }, []);
 
-  // Verification Form State
+  // Verification Form State (Restricted strictly to Drugs for Home)
   const [drugName, setDrugName] = useState('');
   const [manufacturer, setManufacturer] = useState('');
   const [nafdacNum, setNafdacNum] = useState('');
@@ -106,10 +160,9 @@ export default function HomePage() {
   const [verifiedDrug, setVerifiedDrug] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Selected Article for In-App Reader Modal
+  // Selected Content Modals
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-
-  // Legal Modal State (Stores the active legal document object)
+  const [selectedAlert, setSelectedAlert] = useState<RegulatoryAlert | null>(null);
   const [activeLegalDoc, setActiveLegalDoc] = useState<{ title: string; tag: string; summary: string; content: string[] } | null>(null);
 
   const legalContentMap: Record<string, { title: string; tag: string; summary: string; content: string[] }> = {
@@ -119,7 +172,7 @@ export default function HomePage() {
       summary: 'How PharmaVerify NG collects, utilizes, and safeguards your personal and health-related verification data.',
       content: [
         '1. Information We Collect: We collect information you explicitly provide when submitting medication details (such as drug names, NAFDAC registration numbers, batch numbers, and visual observations) or when contacting our team.',
-        '2. Use of Data: All verification data is processed through secure clinical and AI intelligence models strictly to evaluate NAFDAC Greenbook conformity, expiration status, and packaging integrity.',
+        '2. Use of Data: All verification data is processed through secure clinical and AI intelligence models strictly to evaluate NAFDAC registration conformity, expiration status, and packaging integrity.',
         '3. Data Security: We deploy robust encryption standards and secure cloud infrastructure (Firebase/Supabase) to ensure your health inquiries and logs remain confidential.',
         '4. Third-Party Services: Verification prompts are processed securely via encrypted API endpoints. We never sell, rent, or trade your personal health data to third-party advertisers.'
       ]
@@ -243,6 +296,32 @@ export default function HomePage() {
           : `valid for ${diff} months`;
     }
 
+    // --- LIVE NAPAMS SCRAPER INTEGRATION (RETIRED GREENBOOK) ---
+    let nafdacContext = 'No NAFDAC number provided.';
+    let liveScrapedRecord = null;
+
+    if (nafdacNum) {
+      try {
+        console.log(`[Home Scraper] Querying live NAPAMS portal for NRN: ${nafdacNum}`);
+        const scrapeRes = await fetch('/api/scrape-nafdac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nrn: nafdacNum }),
+        });
+        const scrapeData = await scrapeRes.json();
+        
+        if (scrapeData.found && scrapeData.record) {
+          liveScrapedRecord = scrapeData.record;
+          nafdacContext = `LIVE NAPAMS REGISTRY VERIFIED: Product Name: "${liveScrapedRecord.productName}", Category: "${liveScrapedRecord.category}", Manufacturer: "${liveScrapedRecord.manufacturer}", Official Expiry: "${liveScrapedRecord.expiryDate}".`;
+        } else {
+          nafdacContext = `LIVE NAPAMS REGISTRY CHECK: NRN "${nafdacNum}" returned no active record on the official portal.`;
+        }
+      } catch (scrapeErr) {
+        console.error('[Home Live Scrape Error]:', scrapeErr);
+        nafdacContext = 'Live NAPAMS portal lookup encountered a network timeout.';
+      }
+    }
+
     const activeWarnings = warnings.filter((w) => w !== 'none');
     const isBulkDispensed = packaging === 'dispensing_envelope';
     const isTrustedSource = source === 'pharmacy' || source === 'hospital';
@@ -250,20 +329,20 @@ export default function HomePage() {
     let packagingRules = "";
     if (isBulkDispensed) {
       if (isTrustedSource) {
-        packagingRules = "SPECIAL BULK RULE: Drug is in a pharmacy/hospital dispensing envelope or ziplock. DO NOT penalize for missing NAFDAC/Expiry. Evaluate its safety naturally based on physical condition and source. Do NOT explicitly state 'it passed because of the envelope rule' — just write a professional, natural clinical summary indicating it appears safe for use while noting standard handling precautions.";
+        packagingRules = "SPECIAL BULK RULE: Drug is in a pharmacy/hospital dispensing envelope or ziplock. DO NOT penalize for missing NAFDAC/Expiry. Evaluate its safety naturally based on physical condition and source.";
       } else {
-        packagingRules = "SPECIAL BULK RULE: Drug is in loose packaging from an unverified source (open market/hawker). Score as UNSAFE. State clearly that buying loose medications outside of licensed pharmacies is hazardous.";
+        packagingRules = "SPECIAL BULK RULE: Drug is in loose packaging from an unverified source (open market/hawker). Score as UNSAFE.";
       }
     } else {
       packagingRules = "STANDARD PACKAGING RULE: Evaluate commercial packaging normally according to standard pharmacopeial safety.";
     }
 
-    const prompt = `You are a pharmaceutical safety expert in Nigeria. Analyse these medication details and cross-check NAFDAC registration conformity, expiration validity, and packaging integrity. Return ONLY valid JSON, no markdown, no extra text.
+    const prompt = `You are a pharmaceutical safety expert in Nigeria. Analyse these medication details, cross-checking NAFDAC registration conformity via official live portal data, expiration validity, and packaging integrity. Return ONLY valid JSON, no markdown, no extra text.
 
 Details:
 - Name: ${drugName}
 - Manufacturer: ${manufacturer || 'Not given'}
-- NAFDAC Reg Number: ${nafdacNum || 'Not provided'}
+- NAFDAC Reg Number: ${nafdacNum || 'Not provided'} (${nafdacContext})
 - Batch (optional): ${batchNum || 'Not given'}
 - Expiry: ${expiryDate || 'Not given'} (${expiryStatus})
 - Storage: ${storageTemp || 'Not given'}
@@ -277,10 +356,11 @@ Return exactly:
 {"status":"SAFE"|"CAUTION"|"UNSAFE"|"UNKNOWN","safetyScore":<0-100>,"summary":"<2-3 sentences providing a natural, professional clinical assessment without exposing underlying system rules>","flags":[{"type":"ok"|"warn"|"bad","message":"<specific finding>"}],"recommendation":"<clear actionable advice>","proTip":"<one expert tip>"}
 
 Rules:
-1. Expired = UNSAFE.
-2. Damaged packaging + physical changes = UNSAFE.
-3. ${packagingRules}
-4. Always recommend consulting a licensed pharmacist or physician.`;
+1. If live NAPAMS registry data confirms the product is officially registered and active, heavily favor a SAFE status unless severe physical degradation or expiry is present.
+2. Expired = UNSAFE.
+3. Damaged packaging + physical changes = UNSAFE.
+4. ${packagingRules}
+5. Always recommend consulting a licensed pharmacist or physician.`;
 
     try {
       const res = await fetch('/api/gemini', {
@@ -714,7 +794,7 @@ Rules:
           animation: fadeUp 0.45s ease both;
         }
 
-        /* ═══ VERIFY PAGE ═══ */
+        /* ═══ VERIFY PAGE (RESTRICTED STRICTLY TO DRUGS FOR HOME) ═══ */
         .verify-layout{display:grid;grid-template-columns:1fr 400px;gap:2rem;max-width:1100px;margin:0 auto}
         .form-panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:2.5rem;position:relative;overflow:hidden}
         .form-panel::before{content:'';position:absolute;top:-80px;right:-80px;width:200px;height:200px;background:radial-gradient(circle,var(--jade-glow),transparent 70%);pointer-events:none}
@@ -861,6 +941,7 @@ Rules:
         .resource-card p{font-size:13.5px;color:var(--text2);line-height:1.7}
         .resource-meta{margin-top:1.25rem;font-size:12px;color:var(--text3);display:flex;align-items:center;gap:8px}
         .resource-meta::before{content:'';flex:1;height:1px;background:var(--line)}
+        
         .faq-section{margin-top:4rem}
         .faq-item{border-bottom:1px solid var(--line);overflow:hidden}
         .faq-q{padding:1.25rem 0;font-size:15px;font-weight:600;color:var(--text);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:color 0.2s}
@@ -909,6 +990,26 @@ Rules:
         /* ═══ ANIMATIONS ═══ */
         @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
         .fade-in{animation:fadeUp 0.6s ease both}
+
+        /* ═══ ALERTS UI ═══ */
+        .alerts-list{display:flex;flex-direction:column;gap:1rem;margin-top:2rem}
+        .alert-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:1.5rem;display:flex;gap:1.25rem;align-items:flex-start;cursor:pointer;transition:all 0.2s}
+        .alert-card:hover{border-color:rgba(0,201,122,0.3);transform:translateX(4px)}
+        .alert-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
+        .ai-ban{background:rgba(239,68,68,0.15);color:var(--blood)}
+        .ai-recall{background:rgba(245,158,11,0.15);color:var(--ember)}
+        .ai-safety{background:rgba(0,201,122,0.15);color:var(--jade)}
+        .ai-enforcement{background:rgba(139,92,246,0.15);color:#8b5cf6}
+        .alert-content{flex:1}
+        .alert-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+        .alert-type{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:6px}
+        .at-ban{background:rgba(239,68,68,0.1);color:var(--blood);border:1px solid rgba(239,68,68,0.2)}
+        .at-recall{background:rgba(245,158,11,0.1);color:var(--ember);border:1px solid rgba(245,158,11,0.2)}
+        .at-safety{background:rgba(0,201,122,0.1);color:var(--jade);border:1px solid rgba(0,201,122,0.2)}
+        .at-enforcement{background:rgba(139,92,246,0.1);color:#8b5cf6;border:1px solid rgba(139,92,246,0.2)}
+        .alert-date{font-size:11.5px;color:var(--text3)}
+        .alert-title{font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--white);margin-bottom:6px;line-height:1.3}
+        .alert-summary{font-size:13px;color:var(--text2);line-height:1.6}
 
         /* ═══ MOBILE HORIZONTAL SCROLL SNAP SYSTEM ═══ */
         .mobile-swipe-indicator {
@@ -963,6 +1064,11 @@ Rules:
             border-radius: 18px;
             padding: 1.75rem 1.25rem;
             text-align: center;
+          }
+          
+          .alert-card {
+            flex-direction: column;
+            gap: 1rem;
           }
         }
 
@@ -1084,7 +1190,7 @@ Rules:
           <div className="topbar-left">
             <span style={{ color: 'var(--jade)', fontWeight: 600 }}>National Drug Safety Initiative</span>
             <span style={{ opacity: 0.35 }}>|</span>
-            <span>Aligned with NAFDAC Greenbook Guidelines</span>
+            <span>Aligned with NAFDAC Registration Guidelines</span>
           </div>
           <div>Verified Dispensary Standards · PSN Aligned</div>
         </div>
@@ -1157,7 +1263,8 @@ Rules:
             </Link>
             <button className="menu-toggle" onClick={() => setMobileNavOpen(!mobileNavOpen)} title="Menu">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
           </div>
@@ -1167,7 +1274,6 @@ Rules:
       {/* ════════════════════════ PAGE: HOME ════════════════════════ */}
       <div className={`page ${activeTab === 'home' ? 'active' : ''}`}>
         <div className="hero">
-          {/* 4-Scene Pharmaceutical Background Slideshow */}
           <div className="hero-slides-wrapper">
             <div
               className={`hero-slide ${heroSlide === 0 ? 'active' : ''}`}
@@ -1229,7 +1335,6 @@ Rules:
           </div>
         </div>
 
-        {/* WHY PHARMAVERIFY */}
         <section style={{ background: 'var(--deep)' }}>
           <div className="section-inner">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5rem', alignItems: 'center' }}>
@@ -1281,9 +1386,8 @@ Rules:
           </div>
         </section>
 
-        {/* ═══ PROCESS WITH BLURRED ROTATING BACKDROP & STACKED DEVICES ═══ */}
+        {/* PROCESS STAGE SECTION */}
         <section className="process-stage-section">
-          {/* Blurred Rotating Pharmaceutical Backdrop */}
           <div className="process-backdrop-slides">
             <div
               className={`process-bg-slide ${activeStep === 1 ? 'active' : ''}`}
@@ -1312,7 +1416,6 @@ Rules:
               <div className="mobile-swipe-indicator">Swipe steps ↔</div>
             </div>
 
-            {/* 4 Interactive Steps with 6s Sync */}
             <div className="mobile-scroll-snap" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 0, position: 'relative' }}>
               <div className="steps-connector-line" style={{ position: 'absolute', top: 28, left: '12.5%', right: '12.5%', height: 1, background: 'linear-gradient(90deg,var(--jade),rgba(0,201,122,0.2))', zIndex: 0 }}></div>
 
@@ -1357,9 +1460,8 @@ Rules:
               </div>
             </div>
 
-            {/* DEVICES ROW: PHONE ON TOP, TABLET UNDERNEATH */}
+            {/* DEVICES ROW */}
             <div className="dual-devices-row">
-              {/* LEFT: 3D DANCING SMARTPHONE */}
               <div 
                 className="stage-phone-perspective"
                 onMouseMove={(e) => handleDeviceMove(e, setPhoneTilt, 18)}
@@ -1465,7 +1567,6 @@ Rules:
                 </div>
               </div>
 
-              {/* RIGHT: TABLET / PC (Stacked directly under phone on mobile) */}
               <div 
                 className="stage-laptop-perspective"
                 onMouseMove={(e) => handleDeviceMove(e, setLaptopTilt, 12)}
@@ -1532,7 +1633,6 @@ Rules:
               </div>
             </div>
 
-            {/* CENTERED BUTTON ANCHORED UNDERNEATH BOTH DEVICES */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginTop: '1.5rem', position: 'relative', zIndex: 2 }}>
               <button
                 className="btn-primary"
@@ -1568,7 +1668,7 @@ Rules:
         </div>
       </div>
 
-      {/* ════════════════════════ PAGE: VERIFY ════════════════════════ */}
+      {/* ════════════════════════ PAGE: VERIFY (RESTRICTED TO DRUGS) ════════════════════════ */}
       <div className={`page ${activeTab === 'verify' ? 'active' : ''}`}>
         <section>
           <div className="verify-layout">
@@ -1581,7 +1681,7 @@ Rules:
                 </div>
                 <div>
                   <h2>Drug Verification Form</h2>
-                  <p>Complete all fields for the most accurate assessment</p>
+                  <p>Complete all fields for accurate registration compliance assessment</p>
                 </div>
               </div>
               <div className="form-grid">
@@ -1624,7 +1724,7 @@ Rules:
                     <option value="">Select condition</option>
                     <option value="intact">Intact & factory sealed</option>
                     <option value="opened">Opened but undamaged</option>
-                    <option value="dispensing_envelope">Pharmacy dispensing envelope / Ziplock</option>
+                    <option value="dispensing_envelope">Pharmacy dispensing envelope / Ziplock / Hospital card</option>
                     <option value="damaged">Damaged / torn / wet</option>
                     <option value="repackaged">Repackaged / suspicious</option>
                     <option value="missing">No packaging / loose</option>
@@ -1680,7 +1780,7 @@ Rules:
               </div>
               <button className="verify-btn" onClick={runVerification} disabled={loading}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                {loading ? 'Analyzing...' : 'Run Verification Analysis'}
+                {loading ? 'Querying NAFDAC Portal...' : 'Run Verification Analysis'}
               </button>
             </div>
 
@@ -1998,6 +2098,32 @@ Rules:
                   <h3>{art.title}</h3>
                   <p>{art.summary}</p>
                   <div className="resource-meta">{art.readTime} · Read Article →</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section style={{ background: 'var(--void)' }}>
+          <div className="section-inner">
+            <div className="section-kicker">Official NAFDAC Bulletins</div>
+            <h2 className="section-title">Regulatory Updates &amp; Recalls</h2>
+            <p className="section-sub">Stay informed with the latest drug bans, safety warnings, and enforcement actions from regulatory authorities across Nigeria.</p>
+
+            <div className="alerts-list">
+              {REGULATORY_ALERTS.map((alert) => (
+                <div key={alert.id} className="alert-card" onClick={() => setSelectedAlert(alert)}>
+                  <div className={`alert-icon ai-${alert.type}`}>
+                    {alert.type === 'ban' ? '🚫' : alert.type === 'recall' ? '🔄' : alert.type === 'safety' ? '⚠️' : '🛡️'}
+                  </div>
+                  <div className="alert-content">
+                    <div className="alert-top">
+                      <div className={`alert-type at-${alert.type}`}>{alert.type.toUpperCase()}</div>
+                      <div className="alert-date">{alert.date}</div>
+                    </div>
+                    <div className="alert-title">{alert.title}</div>
+                    <div className="alert-summary">{alert.summary}</div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -2323,9 +2449,66 @@ Rules:
             <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
               <button
                 onClick={() => setActiveLegalDoc(null)}
-                style={{ background: '#00c97a', border: '1px solid #040a06', color: '#040a06', fontWeight: 700, borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 12.5 }}
+                style={{ background: '#00c97a', border: 'none', color: '#040a06', fontWeight: 700, borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 12.5 }}
               >
                 Close Document
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REGULATORY ALERT DETAIL MODAL */}
+      {selectedAlert && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', backdropFilter: 'blur(5px)' }}
+          onClick={() => setSelectedAlert(null)}
+        >
+          <div
+            style={{ background: '#101c14', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 20, width: '100%', maxWidth: 680, maxHeight: '85vh', overflowY: 'auto', msOverflowStyle: 'none', scrollbarWidth: 'none', padding: '2rem', position: 'relative' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+              <div>
+                <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', color: selectedAlert.type === 'ban' ? 'var(--blood)' : selectedAlert.type === 'recall' ? 'var(--ember)' : selectedAlert.type === 'safety' ? 'var(--jade)' : '#8b5cf6', letterSpacing: 1.2 }}>
+                  {selectedAlert.type} Alert · {selectedAlert.date}
+                </span>
+                <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 22, color: '#fff', marginTop: 4, lineHeight: 1.3 }}>
+                  {selectedAlert.title}
+                </h2>
+              </div>
+              <button
+                onClick={() => setSelectedAlert(null)}
+                style={{ background: 'none', border: 'none', color: '#9ab0a0', fontSize: 20, cursor: 'pointer', padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: 14, color: '#9ab0a0', fontStyle: 'italic', marginBottom: '1.5rem', borderLeft: `3px solid ${selectedAlert.type === 'ban' ? 'var(--blood)' : selectedAlert.type === 'recall' ? 'var(--ember)' : selectedAlert.type === 'safety' ? 'var(--jade)' : '#8b5cf6'}`, paddingLeft: 10, lineHeight: 1.6 }}>
+              {selectedAlert.summary}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: 13.5, color: '#d0ddd4', lineHeight: 1.75 }}>
+              {selectedAlert.content.map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+
+            <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <a
+                href={selectedAlert.url}
+                target="_blank"
+                rel="noreferrer"
+                style={{ fontSize: 12.5, color: 'var(--text2)', textDecoration: 'underline', fontWeight: 600 }}
+              >
+                Read Official Bulletin ↗
+              </a>
+              <button
+                onClick={() => setSelectedAlert(null)}
+                style={{ background: selectedAlert.type === 'ban' ? 'rgba(239,68,68,0.15)' : selectedAlert.type === 'recall' ? 'rgba(245,158,11,0.15)' : selectedAlert.type === 'safety' ? 'rgba(0,201,122,0.15)' : 'rgba(139,92,246,0.15)', border: `1px solid ${selectedAlert.type === 'ban' ? 'var(--blood)' : selectedAlert.type === 'recall' ? 'var(--ember)' : selectedAlert.type === 'safety' ? 'var(--jade)' : '#8b5cf6'}`, color: selectedAlert.type === 'ban' ? 'var(--blood)' : selectedAlert.type === 'recall' ? 'var(--ember)' : selectedAlert.type === 'safety' ? 'var(--jade)' : '#8b5cf6', fontWeight: 700, borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 12.5 }}
+              >
+                Close Alert
               </button>
             </div>
           </div>
