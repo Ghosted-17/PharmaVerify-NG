@@ -1111,8 +1111,9 @@ Return ONLY valid JSON — no markdown, no extra text:
 Rules:
 1. If NAPAMS registry confirms registration and no red flags, status must be SAFE with score above 80.
 2. Expired product = UNSAFE always, score below 20.
-3. ${packagingRules}
-4. If category is water or food and everything checks out, just confirm it is safe to consume — no medical language needed.`;
+3. MISSING REGISTRY RULE: If the NAFDAC context says "returned no active record" or "timeout", the maximum safetyScore is 60 and status MUST be CAUTION at best. You must explicitly warn the user: "I couldn't find this registration number in the live digital registry. While cosmetics and older products are still being migrated, please be extra careful."
+4. ${packagingRules}
+5. If category is water or food and everything checks out, just confirm it is safe to consume — no medical language needed.`;
 
     try {
       const res = await fetch('/api/gemini', {
@@ -2235,7 +2236,7 @@ COMMUNICATION RULES:
                             {dvNafdacNum ? `NRN "${dvNafdacNum}"` : 'This product'} was not found in our live portal query. We recommend verifying the registry entry directly on the official NAFDAC portal.
                           </p>
                           <a
-                            href={nafdacCheckResult.greenbook_url || `https://greenbook.nafdac.gov.ng/?search=${encodeURIComponent(dvNafdacNum)}`}
+                            href={nafdacCheckResult.greenbook_url || `https://registration.nafdac.gov.ng/#verify/?search=${encodeURIComponent(dvNafdacNum)}`}
                             target="_blank"
                             rel="noreferrer"
                             className="btn-jade"

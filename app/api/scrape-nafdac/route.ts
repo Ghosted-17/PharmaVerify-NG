@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 
 export async function POST(req: Request) {
   try {
@@ -10,16 +10,15 @@ export async function POST(req: Request) {
 
     console.log(`[Scraper] Launching hardened instance for Primary NAFDAC Portal, NRN: ${nrn}`);
     
-    const browser = await puppeteer.launch({ 
-      headless: true, 
-      executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox', 
-        '--ignore-certificate-errors',
-        '--disable-blink-features=AutomationControlled',
-        '--start-maximized'
-      ] 
+    const BROWSERLESS_API_KEY = process.env.BROWSERLESS_API_KEY;
+    
+    if (!BROWSERLESS_API_KEY) {
+      throw new Error("BROWSERLESS_API_KEY is missing from environment variables.");
+    }
+
+    // Connects to the massive Browserless Chrome servers instead of your local/Vercel machine
+    const browser = await puppeteer.connect({
+      browserWSEndpoint: `wss://chrome.browserless.io?token=${BROWSERLESS_API_KEY}`
     });
     
     const page = await browser.newPage();
