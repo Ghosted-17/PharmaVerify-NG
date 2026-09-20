@@ -252,6 +252,29 @@ export default function HomePage() {
     }
   }, []);
 
+// Horizontally center the active step without triggering ANY vertical browser scroll
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const activeCard = document.querySelector(`.step-node.active`) as HTMLElement;
+    if (activeCard) {
+      const container = activeCard.closest('.mobile-scroll-snap') as HTMLElement;
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const cardRect = activeCard.getBoundingClientRect();
+        
+        // Calculate exact distance between the center of the screen and the center of the card
+        const containerCenter = containerRect.left + (containerRect.width / 2);
+        const cardCenter = cardRect.left + (cardRect.width / 2);
+        const distanceToCenter = cardCenter - containerCenter;
+
+        // Only scroll the internal horizontal container (leaves the main window vertical scroll alone)
+        if (Math.abs(distanceToCenter) > 5) {
+          container.scrollBy({ left: distanceToCenter, behavior: 'smooth' });
+        }
+      }
+    }
+  }, [activeStep]);
+
   const showPage = (pageName: typeof activeTab) => {
     setActiveTab(pageName);
     setMobileNavOpen(false);
@@ -565,7 +588,7 @@ Rules:
         .stat-label{font-size:12px;color:var(--text3);margin-top:4px;letter-spacing:0.3px}
 
         /* ═══ SECTIONS ═══ */
-        section{padding:6rem 2.5rem}
+        section{padding:3.5rem 2.5rem}
         .section-inner{max-width:1100px;margin:0 auto}
         .section-kicker{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--jade);margin-bottom:0.75rem}
         .section-title{font-family:'Fraunces',serif;font-size:clamp(2rem,4vw,3rem);font-weight:700;color:var(--white);letter-spacing:-1px;line-height:1.15;margin-bottom:1rem}
@@ -576,7 +599,14 @@ Rules:
           position: relative;
           overflow: hidden;
           background: var(--surface);
-          padding: 6rem 2.5rem;
+          padding: 3.5rem 2.5rem;
+        }
+
+        .process-stage-section {
+          position: relative;
+          overflow: hidden !important; /* Forces strict clipping */
+          background: var(--surface);
+          padding: 3.5rem 2.5rem;
         }
 
         .process-backdrop-slides {
@@ -584,11 +614,12 @@ Rules:
           inset: 0;
           pointer-events: none;
           z-index: 0;
+          overflow: hidden; /* Contains the blur bleeding */
         }
 
         .process-bg-slide {
           position: absolute;
-          inset: -40px;
+          inset: 0; /* Changed from -40px to 0 to prevent edge bleeding */
           background-size: cover;
           background-position: center;
           filter: blur(28px) brightness(0.28) saturate(1.2);
@@ -719,7 +750,8 @@ Rules:
           border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 26px;
           overflow: hidden;
-          min-height: 360px;
+          min-height: 320px;
+          max-height: 320px;
           position: relative;
           display: flex;
           flex-direction: column;
@@ -791,9 +823,10 @@ Rules:
           padding: 0 1.25rem 1.25rem;
           display: flex;
           flex-direction: column;
+          justify-content: space-between; /* Keeps content anchored evenly */
           animation: fadeUp 0.45s ease both;
+          overflow: hidden;
         }
-
         /* ═══ VERIFY PAGE (RESTRICTED STRICTLY TO DRUGS FOR HOME) ═══ */
         .verify-layout{display:grid;grid-template-columns:1fr 400px;gap:2rem;max-width:1100px;margin:0 auto}
         .form-panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:2.5rem;position:relative;overflow:hidden}
@@ -1070,7 +1103,32 @@ Rules:
             flex-direction: column;
             gap: 1rem;
           }
+
+        .split-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 5rem;
+          align-items: center;
         }
+
+        /* Smooth focus transition for steps matching the phone flip */
+        .step-node {
+          transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+          opacity: 0.6;
+          transform: scale(0.96);
+        }
+        .step-node.active {
+          opacity: 1;
+          transform: scale(1.04);
+        }
+
+        .step-node {
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .step-node.active {
+          transform: translateY(-4px) scale(1.03);
+        }
+      }
 
         /* ═══ RESPONSIVE ═══ */
         @media(max-width:900px){
@@ -1079,13 +1137,33 @@ Rules:
           .footer-top{grid-template-columns:1fr 1fr}
           .form-grid{grid-template-columns:1fr}
           .checks{grid-template-columns:1fr}
-          .stats-bar{flex-wrap:wrap;gap:1rem}
-          .stat-item{border-right:none;border-bottom:1px solid var(--line);padding:1rem 2rem;width:50%}
+          
+          /* Fix the massive mobile whitespace */
+          section {padding: 2.5rem 1.25rem}
+          .process-stage-section {padding: 2.5rem 1.25rem}
+          
+          /* Fix the massive vertical stats bar */
+          .stats-bar{display:grid; grid-template-columns:1fr 1fr; gap:0; padding:1rem}
+          .stat-item{width:auto; padding:1.5rem 0.5rem; border-right:none; border-bottom:none}
+          .stat-item:nth-child(1), .stat-item:nth-child(2) {border-bottom:1px solid var(--line)}
+          .stat-item:nth-child(odd) {border-right:1px solid var(--line)}
+
+          /* Stack the main section grid to kill the empty void */
+          .split-grid {
+            grid-template-columns: 1fr !important;
+            gap: 2.5rem !important;
+          }
+
+          /* Shrink the Stats Bar text and padding for mobile */
+          .stat-num { font-size: 24px !important; }
+          .stat-label { font-size: 10.5px !important; margin-top: 2px !important; }
+          .stat-item { padding: 1rem 0.5rem !important; }
+
         }
         @media(max-width:600px){
           .services-grid,.features-grid,.pricing-grid,.team-grid,.resources-grid,.footer-top{grid-template-columns:1fr}
           
-          /* Navbar layout for mobile: Logo on left, scrollable items + hamburger menu on right */
+          /* Navbar layout for mobile: Logo on left, hamburger menu on right */
           nav {
             padding: 0 1rem !important;
             display: flex !important;
@@ -1135,47 +1213,23 @@ Rules:
             border-bottom-color: var(--line) !important;
           }
 
-          .nav-mobile-actions {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 8px !important;
-            padding: 1rem 1.5rem !important;
-            border-top: 1px solid var(--line) !important;
-            margin-top: 0.5rem !important;
+          /* NEW: Hide desktop buttons and show mobile auth links */
+          .desktop-only {
+            display: none !important;
           }
-          .nav-mobile-actions a {
-            width: 100% !important;
-            text-align: center !important;
-            text-decoration: none !important;
-            padding: 12px !important;
-            border-radius: 8px !important;
-            font-family: 'Epilogue', sans-serif !important;
-            font-size: 14px !important;
-            font-weight: 600 !important;
-            cursor: pointer !important;
-          }
-
-          /* Make right action buttons side-scrollable so Sign In doesn't clip */
-          .nav-right {
-            display: flex !important;
-            align-items: center !important;
-            gap: 8px !important;
-            overflow-x: auto !important;
-            max-width: 55vw !important;
-            padding-bottom: 4px !important;
-          }
-          .nav-right .btn-ghost {
-            display: inline-flex !important;
-            white-space: nowrap !important;
-          }
-          .nav-right .btn-primary {
-            white-space: nowrap !important;
-            padding: 8px 14px !important;
-            font-size: 12.5px !important;
+          .mobile-auth-tabs {
+            display: block !important;
+            border-top: 1px solid var(--line);
+            margin-top: 0.5rem;
           }
 
           .topbar{flex-direction:column;align-items:center;gap:5px;padding:10px 1rem;text-align:center}
           .topbar-left{flex-direction:column;gap:4px;align-items:center}
+        }
+
+        /* Hide mobile auth tabs on desktop */
+        .mobile-auth-tabs {
+          display: none;
         }
       `}</style>
 
@@ -1249,15 +1303,20 @@ Rules:
             <div className={`nav-tab ${activeTab === 'resources' ? 'active' : ''}`} onClick={() => showPage('resources')}>Resources</div>
             <div className={`nav-tab ${activeTab === 'contact' ? 'active' : ''}`} onClick={() => showPage('contact')}>Contact</div>
 
-            <div className="nav-mobile-actions">
-              <Link href="/signup" style={{ border: '1px solid var(--line2)', color: 'var(--text2)', background: 'transparent', textAlign: 'center', textDecoration: 'none' }}>Sign Up</Link>
-              <Link href="/signin" style={{ border: '1px solid var(--jade)', color: 'var(--jade)', background: 'transparent', textAlign: 'center', textDecoration: 'none' }}>Sign In</Link>
+            {/* New Mobile-Only Menu Links */}
+            <div className="mobile-auth-tabs">
+              <Link href="/signup" className="nav-tab" style={{ textDecoration: 'none', color: 'var(--jade)', fontWeight: 700 }}>
+                Sign Up / Create Account
+              </Link>
+              <Link href="/signin" className="nav-tab" style={{ textDecoration: 'none', color: 'var(--text2)' }}>
+                Already have an account? Sign In
+              </Link>
             </div>
           </div>
 
           <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Link href="/signup" className="btn-ghost" style={{ textDecoration: 'none' }}>Sign Up</Link>
-            <Link href="/signin" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Link href="/signup" className="btn-ghost desktop-only" style={{ textDecoration: 'none' }}>Sign Up</Link>
+            <Link href="/signin" className="btn-primary desktop-only" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" /></svg>
               Sign In
             </Link>
@@ -1303,7 +1362,7 @@ Rules:
             </div>
             <h1>Drug Verification<br />You Can <em>Trust</em></h1>
             <p className="hero-sub" style={{ marginBottom: 0 }}>
-              PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> cross-checks medication details, NAFDAC registration alignment, and storage conditions with clinical intelligence.
+              PharmaVerify<sup style={{ fontSize: '7px', verticalAlign: 'super' }}>NG</sup> cross-checks medication details, NAFDAC registration alignment, and storage conditions with clinical intelligence.
             </p>
           </div>
 
@@ -1322,7 +1381,7 @@ Rules:
             <div className="stat-label">Verification accuracy</div>
           </div>
           <div className="stat-item">
-            <div className="stat-num">2M+</div>
+            <div className="stat-num">20+</div>
             <div className="stat-label">Drugs checked</div>
           </div>
           <div className="stat-item">
@@ -1330,16 +1389,16 @@ Rules:
             <div className="stat-label">Partner hospitals</div>
           </div>
           <div className="stat-item">
-            <div className="stat-num">&lt;5s</div>
+            <div className="stat-num">&lt; 60s</div>
             <div className="stat-label">Average check time</div>
           </div>
         </div>
 
         <section style={{ background: 'var(--deep)' }}>
           <div className="section-inner">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5rem', alignItems: 'center' }}>
+            <div className="split-grid">
               <div>
-                <div className="section-kicker">Why PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup></div>
+                <div className="section-kicker">Why PharmaVerify<sup style={{ fontSize: '7px', verticalAlign: 'super' }}>NG</sup></div>
                 <h2 className="section-title">Counterfeit drugs are<br />a silent epidemic</h2>
                 <p className="section-sub">Over 100,000 deaths occur annually due to substandard and counterfeit medicines in Africa. PharmaVerify<sup style={{ fontSize: '10px', verticalAlign: 'super' }}>NG</sup> gives patients, pharmacies, and healthcare providers an immediate, intelligent layer of verification.</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '2.5rem' }}>
