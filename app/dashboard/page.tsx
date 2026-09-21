@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
 import { useRouter } from 'next/navigation';
+import { useZxing } from 'react-zxing';
 
 declare global {
   interface Window {
@@ -234,6 +235,44 @@ export default function DashboardPage() {
   const [lastVerifiedName, setLastVerifiedName] = useState(''); // Holds name after clear
   const [nafdacCheckResult, setNafdacCheckResult] = useState<{ found: boolean; message?: string; greenbook_url?: string } | null>(null);
   const [nafdacFormatHint, setNafdacFormatHint] = useState<string>('');
+  const [showScanner, setShowScanner] = useState(false);
+
+ // Hyper-fast Mobile-Optimized Scanner Hook with Continuous Autofocus
+  const { ref: scannerRef } = useZxing({
+    paused: !showScanner,
+    constraints: {
+      video: {
+        facingMode: 'environment',
+        // Request higher frame rates and continuous focus so it acts like a native scanner app
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        // @ts-ignore - Mobile browsers support advanced constraints like continuous focus
+        advanced: [{ focusMode: 'continuous' }, { zoom: 1.0 }]
+      },
+    },
+    onDecodeResult(result) {
+      const text = result.rawValue;
+      
+      // Instant haptic feedback
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(150);
+      }
+
+      // GS1 DataMatrix Parser (Extracts Expiry '17' and Batch '10')
+      const expMatch = text.match(/17(\d{2})(\d{2})/);
+      if (expMatch) {
+        setDvExpiryDate(`20${expMatch[1]}-${expMatch[2]}`);
+      }
+      
+      const batchMatch = text.match(/10([A-Za-z0-9\-_]+)/);
+      if (batchMatch) {
+        setDvBatchNum(batchMatch[1]);
+      }
+
+      setDvObservations(`[SCANNED DATA]: ${text}\n`);
+      setShowScanner(false);
+    },
+  });
 
   const [repCategory, setRepCategory] = useState<'drug' | 'food' | 'water' | 'cosmetic' | 'device'>('drug');
   const [repProductName, setRepProductName] = useState('');
@@ -1572,6 +1611,19 @@ COMMUNICATION RULES:
         .interactions-grid-wrap{display:grid;grid-template-columns:minmax(0, 1fr) 320px;gap:1.75rem;align-items:start;width:100%}
         .interaction-actions-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 
+        /* ═══ SCANNER UI OVERLAY ═══ */
+        .scanner-overlay{position:fixed;inset:0;background:rgba(4,10,6,0.95);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+        .scanner-viewfinder{position:relative;width:280px;height:280px;border-radius:16px;overflow:hidden;margin:2rem 0;box-shadow:0 0 0 9999px rgba(0,0,0,0.5)}
+        .scanner-feed-placeholder{position:absolute;inset:0;background:#040a06;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;border:1px solid var(--line)}
+        .scanner-reticle{position:absolute;inset:0;pointer-events:none}
+        .scanner-reticle::before{content:'';position:absolute;top:0;left:0;width:40px;height:40px;border-top:4px solid var(--jade);border-left:4px solid var(--jade);border-top-left-radius:16px}
+        .scanner-reticle::after{content:'';position:absolute;top:0;right:0;width:40px;height:40px;border-top:4px solid var(--jade);border-right:4px solid var(--jade);border-top-right-radius:16px}
+        .scanner-reticle-bottom{position:absolute;inset:0;pointer-events:none}
+        .scanner-reticle-bottom::before{content:'';position:absolute;bottom:0;left:0;width:40px;height:40px;border-bottom:4px solid var(--jade);border-left:4px solid var(--jade);border-bottom-left-radius:16px}
+        .scanner-reticle-bottom::after{content:'';position:absolute;bottom:0;right:0;width:40px;height:40px;border-bottom:4px solid var(--jade);border-right:4px solid var(--jade);border-bottom-right-radius:16px}
+        .scanner-laser{position:absolute;top:0;left:0;width:100%;height:2px;background:var(--jade);box-shadow:0 0 10px 2px var(--jade-glow);animation:scanLaser 2.5s ease-in-out infinite}
+        @keyframes scanLaser{0%,100%{top:10%;opacity:0}10%{opacity:1}50%{top:90%}90%{opacity:1}}
+
         @media(max-width:900px){
           .topbar{padding:0 0.75rem !important;width:100% !important;max-width:100vw !important;overflow-x:auto !important;overflow-y:hidden !important;white-space:nowrap !important;scrollbar-width:none !important;gap:10px !important;justify-content:flex-start !important}
           .topbar::-webkit-scrollbar{display:none !important}
@@ -1902,6 +1954,13 @@ COMMUNICATION RULES:
                       <h2>Product Verification Form</h2>
                       <p>Complete all fields for the most accurate assessment</p>
                     </div>
+                    <button 
+                      onClick={() => setShowScanner(true)}
+                      style={{ marginLeft: 'auto', background: 'rgba(0,201,122,0.1)', color: 'var(--jade)', border: '1px solid rgba(0,201,122,0.3)', padding: '10px 16px', borderRadius: '10px', fontSize: '12.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
+                      Scan Barcode
+                    </button>
                   </div>
 
                   <div style={{ display: 'flex', gap: '6px', marginBottom: '1.5rem', background: 'var(--surface)', padding: '6px', borderRadius: '12px', flexWrap: 'wrap' }}>
@@ -3437,6 +3496,50 @@ COMMUNICATION RULES:
                 Read Full Alert on NAFDAC Portal ↗
               </a>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* SCANNER UI OVERLAY */}
+      {showScanner && (
+        <div className="scanner-overlay">
+          <button 
+            onClick={() => setShowScanner(false)}
+            style={{ position: 'absolute', top: '2rem', right: '2rem', width: '44px', height: '44px', borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--text2)', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1010 }}
+          >
+            ✕
+          </button>
+          
+          <div style={{ textAlign: 'center', marginBottom: '1rem', zIndex: 1010 }}>
+            <h2 style={{ fontFamily: 'Fraunces', fontSize: '24px', color: 'var(--white)', marginBottom: '0.5rem' }}>Scan Product Code</h2>
+            <p style={{ fontSize: '13px', color: 'var(--text2)', maxWidth: '300px', margin: '0 auto', lineHeight: 1.5 }}>Align the 1D Barcode or 2D GS1 DataMatrix inside the frame.</p>
+          </div>
+
+          <div className="scanner-viewfinder">
+            <video ref={scannerRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div className="scanner-reticle"></div>
+            <div className="scanner-reticle-bottom"></div>
+            <div className="scanner-laser"></div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', zIndex: 1010, flexDirection: 'column', alignItems: 'center' }}>
+            <button 
+              onClick={() => {
+                // Mock scanning action so you can test the auto-fill flow
+                setDvNafdacNum('A4-5566');
+                setDvBatchNum('GTX-8821B');
+                setDvExpiryDate('2028-11');
+                setShowScanner(false);
+              }}
+              style={{ padding: '14px 28px', background: 'var(--jade)', color: 'var(--void)', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 24px rgba(0,201,122,0.3)' }}
+            >
+              Simulate Successful Scan
+            </button>
+            <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>Testing UI — Camera logic disabled</div>
+          </div>
+          
+          <div style={{ position: 'absolute', bottom: '2rem', fontSize: '10.5px', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '1px', zIndex: 1010 }}>
+            Powered by PharmaVerify<sup style={{fontSize: '7px'}}>NG</sup> Lens
           </div>
         </div>
       )}
