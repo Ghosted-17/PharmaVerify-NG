@@ -1,18 +1,26 @@
 name: Keep Supabase Alive
-
+ 
 on:
   schedule:
-    # Runs every 3 days at 09:00 UTC — well under the 7-day inactivity window
     - cron: '0 9 */3 * *'
-  workflow_dispatch: {} # lets you trigger it manually from the Actions tab too
-
+  workflow_dispatch: {}
+ 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase REST endpoint
+      - name: Health check (no key required)
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
+          echo "Health endpoint status:"
+          curl -s -o /dev/null -w "%{http_code}\n" \
+            "https://wqzqzsfnpsunddijeecb.supabase.co/auth/v1/health"
+ 
+      - name: Ping REST endpoint with anon key
+        run: |
+          echo "REST endpoint status (anon key):"
+          curl -s -o /dev/null -w "%{http_code}\n" \
             "https://wqzqzsfnpsunddijeecb.supabase.co/rest/v1/" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          echo "Key length check (should be 200+ characters):"
+          echo -n "${{ secrets.SUPABASE_ANON_KEY }}" | wc -c
